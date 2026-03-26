@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import * as Icons from "lucide-react";
 import { flowSections } from "./menuConfig";
 
@@ -60,27 +61,37 @@ function FlowItem({ item, color, isLast }) {
   const colors = colorMap[color];
   const IconComponent = Icons[item.icon] || Icons.Box;
 
+  const cardClass = `
+    flex flex-col items-center justify-center gap-3
+    w-36 h-36 bg-white rounded-2xl border-2 border-gray-200
+    shadow-sm cursor-pointer transition-all duration-200
+    ${colors.card} hover:shadow-lg hover:-translate-y-1
+  `;
+
+  const cardContent = (
+    <>
+      <div className={`${colors.icon}`}>
+        <IconComponent size={44} strokeWidth={1.5} />
+      </div>
+      <span className="text-xl font-semibold text-gray-700 leading-tight text-center">
+        {item.label}
+      </span>
+    </>
+  );
+
   return (
     <>
       <div className="flex items-center">
         {/* 功能卡片 */}
-        <button
-          onClick={() => setShowToast(true)}
-          className={`
-            flex flex-col items-center justify-center gap-3
-            w-36 h-36 bg-white rounded-2xl border-2 border-gray-200
-            shadow-sm cursor-pointer transition-all duration-200
-            ${colors.card} hover:shadow-lg hover:-translate-y-1
-          `}
-          title={item.description}
-        >
-          <div className={`${colors.icon}`}>
-            <IconComponent size={44} strokeWidth={1.5} />
-          </div>
-          <span className="text-xl font-semibold text-gray-700 leading-tight text-center">
-            {item.label}
-          </span>
-        </button>
+        {item.active ? (
+          <Link href={item.href} className={cardClass} title={item.description}>
+            {cardContent}
+          </Link>
+        ) : (
+          <button onClick={() => setShowToast(true)} className={cardClass} title={item.description}>
+            {cardContent}
+          </button>
+        )}
 
         {/* 箭頭 */}
         {!isLast && (

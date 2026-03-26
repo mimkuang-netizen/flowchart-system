@@ -9,6 +9,14 @@ export const flowSections = [
     color: "orange",
     items: [
       {
+        id: "customers",
+        label: "客戶資料",
+        icon: "Users",
+        href: "/customers",
+        description: "客戶基本資料管理",
+        active: true,
+      },
+      {
         id: "quotation",
         label: "報價單",
         icon: "FileText",
