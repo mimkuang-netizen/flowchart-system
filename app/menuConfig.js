@@ -80,6 +80,14 @@ export const flowSections = [
     color: "blue",
     items: [
       {
+        id: "products",
+        label: "商品資料",
+        icon: "Package",
+        href: "/products",
+        description: "商品基本資料管理",
+        active: true,
+      },
+      {
         id: "stock",
         label: "庫存查詢",
         icon: "Warehouse",
