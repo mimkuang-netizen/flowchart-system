@@ -1,24 +1,11 @@
 import { supabase } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
 
-export async function GET(request) {
-  const { searchParams } = new URL(request.url)
-  const q = searchParams.get('q') || ''
-  const tag = searchParams.get('tag') || ''
-
-  let query = supabase
-    .from('customers')
+export async function GET() {
+  const { data, error } = await supabase
+    .from('tag_options')
     .select('*')
-    .order('created_at', { ascending: false })
-
-  if (q) {
-    query = query.or(`code.ilike.%${q}%,short_name.ilike.%${q}%,contact.ilike.%${q}%,phone.ilike.%${q}%`)
-  }
-  if (tag) {
-    query = query.contains('tags', [tag])
-  }
-
-  const { data, error } = await query
+    .order('name')
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }
@@ -26,7 +13,7 @@ export async function GET(request) {
 export async function POST(request) {
   const body = await request.json()
   const { data, error } = await supabase
-    .from('customers')
+    .from('tag_options')
     .insert([body])
     .select()
     .single()

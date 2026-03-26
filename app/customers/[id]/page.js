@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, Save, Users } from "lucide-react"
+import { ChevronLeft, Save, Users, X } from "lucide-react"
 
 const EMPTY = {
   code: "", short_name: "", full_name: "", phone: "", fax: "",
   tax_id: "", contact: "", title: "", mobile: "", email: "",
   sales: "", discount: 100,
   delivery_city: "", delivery_district: "", delivery_address: "", delivery_zip: "",
-  notes: "",
+  notes: "", tags: [],
 }
 
 function Field({ label, required, children }) {
@@ -33,18 +33,27 @@ export default function CustomerForm() {
   const isNew = id === "new"
 
   const [form, setForm] = useState(EMPTY)
+  const [tagOptions, setTagOptions] = useState([])
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
   useEffect(() => {
+    fetch("/api/tags").then(r => r.json()).then(d => setTagOptions(Array.isArray(d) ? d : []))
     if (!isNew) {
       fetch(`/api/customers/${id}`)
         .then((r) => r.json())
-        .then((data) => { setForm({ ...EMPTY, ...data }); setLoading(false) })
+        .then((data) => { setForm({ ...EMPTY, ...data, tags: data.tags || [] }); setLoading(false) })
         .catch(() => { setError("找不到此客戶"); setLoading(false) })
     }
   }, [id, isNew])
+
+  const toggleTag = (name) => {
+    setForm(f => ({
+      ...f,
+      tags: f.tags.includes(name) ? f.tags.filter(t => t !== name) : [...f.tags, name]
+    }))
+  }
 
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
 
@@ -197,6 +206,36 @@ export default function CustomerForm() {
             </Field>
           </div>
         </section>
+
+        {/* 標籤 */}
+        {tagOptions.length > 0 && (
+          <section className="bg-white rounded-2xl p-6 shadow-sm">
+            <h2 className="text-xl font-bold text-gray-700 mb-5 pb-3 border-b border-gray-100">標籤</h2>
+            <div className="flex flex-wrap gap-2">
+              {tagOptions.map((t) => {
+                const selected = form.tags.includes(t.name)
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => toggleTag(t.name)}
+                    className="px-4 py-1.5 rounded-full text-base font-semibold border-2 transition-all"
+                    style={{
+                      backgroundColor: selected ? t.color : "white",
+                      color: selected ? "white" : t.color,
+                      borderColor: t.color,
+                    }}
+                  >
+                    {t.name}
+                  </button>
+                )
+              })}
+            </div>
+            {form.tags.length > 0 && (
+              <p className="mt-3 text-sm text-gray-400">已選：{form.tags.join("、")}</p>
+            )}
+          </section>
+        )}
 
         {/* 備註 */}
         <section className="bg-white rounded-2xl p-6 shadow-sm">
