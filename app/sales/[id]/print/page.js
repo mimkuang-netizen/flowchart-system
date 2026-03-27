@@ -130,23 +130,18 @@ export default function SalesPrintPage() {
         </Link>
       </div>
 
-      {/* Print area - A4 portrait, 中一刀 (top/bottom split) */}
-      <div className="print-page bg-white flex flex-col justify-between p-4 gap-2 mx-auto" style={{ width: '210mm', height: '297mm' }}>
-        <SlipContent copy="公司留存聯" />
-        {/* Cut line */}
-        <div className="border-t-2 border-dashed border-gray-300 print:border-gray-200 relative">
-          <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-white px-2 text-[9px] text-gray-300 print:hidden">✂ 裁切線</span>
-        </div>
-        <SlipContent copy="客戶簽收聯" />
+      {/* Print area - 中一刀三聯單 (21.49cm × 14cm) */}
+      <div className="print-page bg-white p-4 mx-auto" style={{ width: '21.49cm', minHeight: '14cm' }}>
+        <SlipContent copy="銷貨單" />
       </div>
 
       <style jsx global>{`
         @media print {
-          @page { size: A4 portrait; margin: 5mm; }
+          @page { size: 21.49cm 14cm; margin: 3mm; }
           body { margin: 0; padding: 0; }
-          .print-page { width: 100% !important; height: 100vh !important; padding: 5mm !important; }
+          .print-page { width: 100% !important; min-height: auto !important; padding: 2mm !important; }
         }
-        .slip-half { height: calc(50% - 8px); }
+        .slip-half { height: auto; }
       `}</style>
     </>
   )
