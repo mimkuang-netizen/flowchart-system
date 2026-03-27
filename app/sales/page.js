@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, Plus, Pencil, Trash2, ShoppingCart, ChevronLeft } from "lucide-react"
+import { Search, Plus, Pencil, Trash2, ShoppingCart, ChevronLeft, Printer } from "lucide-react"
 
 const STATUS_MAP = {
   draft:     { label: "草稿",   color: "bg-gray-100 text-gray-600" },
@@ -82,7 +82,7 @@ export default function SalesList() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  {["銷貨單號", "客戶名稱", "銷貨日期", "出貨日期", "狀態", "總金額", "操作"].map(h => (
+                  {["銷貨單號", "客戶名稱", "銷貨日期", "狀態", "總金額", "操作"].map(h => (
                     <th key={h} className="px-5 py-4 text-left text-base font-semibold text-gray-500">{h}</th>
                   ))}
                 </tr>
@@ -93,7 +93,6 @@ export default function SalesList() {
                     <td className="px-5 py-4 text-lg font-mono font-semibold text-orange-600">{item.order_no}</td>
                     <td className="px-5 py-4 text-lg">{item.customer_name}</td>
                     <td className="px-5 py-4 text-base text-gray-500">{formatDate(item.order_date)}</td>
-                    <td className="px-5 py-4 text-base text-gray-500">{formatDate(item.delivery_date)}</td>
                     <td className="px-5 py-4">
                       <span className={`px-2.5 py-0.5 rounded-full text-sm font-medium ${(STATUS_MAP[item.status] || STATUS_MAP.draft).color}`}>
                         {(STATUS_MAP[item.status] || { label: item.status }).label}
@@ -104,6 +103,9 @@ export default function SalesList() {
                       <div className="flex gap-2">
                         <Link href={`/sales/${item.id}`} className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg">
                           <Pencil size={18} />
+                        </Link>
+                        <Link href={`/sales/${item.id}/print`} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg">
+                          <Printer size={18} />
                         </Link>
                         <button onClick={() => setDeleteId(item.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg">
                           <Trash2 size={18} />
