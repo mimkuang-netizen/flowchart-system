@@ -108,9 +108,14 @@ export default function QuotationForm() {
   const isNew = id === "new"
 
   const today = new Date().toISOString().split("T")[0]
+  const threeMonthsLater = (() => {
+    const d = new Date()
+    d.setMonth(d.getMonth() + 3)
+    return d.toISOString().split("T")[0]
+  })()
 
   const [form, setForm] = useState({
-    quote_no: genNo(), customer_name: "", quote_date: today, valid_until: "",
+    quote_no: genNo(), customer_name: "", quote_date: today, valid_until: threeMonthsLater,
     status: "draft", tax_type: "taxed", subtotal: 0, tax_amount: 0, total: 0, notes: "",
     payment_deadline: "確認下單後3-5日內支付款項",
     payment_method: "銀行轉帳",
