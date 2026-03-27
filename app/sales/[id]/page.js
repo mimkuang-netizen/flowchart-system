@@ -178,14 +178,6 @@ export default function SalesForm() {
               <input type="date" value={form.order_date} onChange={e => setForm(f => ({ ...f, order_date: e.target.value }))} className={inputCls} />
             </div>
             <div>
-              <label className="block text-base font-semibold text-gray-600 mb-1">出貨日期</label>
-              <input type="date" value={form.delivery_date || ""} onChange={e => setForm(f => ({ ...f, delivery_date: e.target.value }))} className={inputCls} />
-            </div>
-            <div>
-              <label className="block text-base font-semibold text-gray-600 mb-1">對應報價單號</label>
-              <input value={form.quote_no || ""} onChange={e => setForm(f => ({ ...f, quote_no: e.target.value }))} placeholder="選填" className={inputCls} />
-            </div>
-            <div>
               <label className="block text-base font-semibold text-gray-600 mb-1">狀態</label>
               <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className={`${inputCls} bg-white`}>
                 {STATUS_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
