@@ -23,6 +23,18 @@ export async function POST(request) {
   const body = await request.json()
   const { items, ...header } = body
 
+  // 移除前端傳來但資料表不需要的欄位
+  delete header.customer_id
+  delete header.quotation_items
+
+  // 清理 items 中的 product_id（若資料表欄位型別不符）
+  const cleanItems = items?.map((item, i) => {
+    const row = { ...item, sort_order: i }
+    delete row.product_id
+    delete row.id
+    return row
+  })
+
   const { data: quote, error } = await supabase
     .from('quotations')
     .insert([header])
@@ -31,8 +43,8 @@ export async function POST(request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  if (items && items.length > 0) {
-    const rows = items.map((item, i) => ({ ...item, quote_id: quote.id, sort_order: i }))
+  if (cleanItems && cleanItems.length > 0) {
+    const rows = cleanItems.map(item => ({ ...item, quote_id: quote.id }))
     const { error: itemErr } = await supabase.from('quotation_items').insert(rows)
     if (itemErr) return NextResponse.json({ error: itemErr.message }, { status: 500 })
   }

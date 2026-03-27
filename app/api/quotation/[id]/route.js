@@ -21,6 +21,7 @@ export async function PUT(request, { params }) {
   delete header.id
   delete header.created_at
   delete header.quotation_items
+  delete header.customer_id
 
   const { data, error } = await supabase
     .from('quotations')
@@ -37,6 +38,7 @@ export async function PUT(request, { params }) {
     const rows = items.map((item, i) => {
       const row = { ...item, quote_id: Number(id), sort_order: i }
       delete row.id
+      delete row.product_id
       return row
     })
     const { error: itemErr } = await supabase.from('quotation_items').insert(rows)
