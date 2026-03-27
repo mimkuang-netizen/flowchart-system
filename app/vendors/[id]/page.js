@@ -279,34 +279,6 @@ export default function VendorForm() {
           </div>
         </section>
 
-        {/* 標籤 */}
-        {tagOptions.length > 0 && (
-          <section className="bg-white rounded-2xl p-6 shadow-sm">
-            <h2 className="text-xl font-bold text-gray-700 mb-5 pb-3 border-b border-gray-100">標籤</h2>
-            <div className="flex flex-wrap gap-2">
-              {tagOptions.map(t => {
-                const selected = form.tags.includes(t.name)
-                return (
-                  <button
-                    key={t.id} type="button" onClick={() => toggleTag(t.name)}
-                    className="px-4 py-1.5 rounded-full text-base font-semibold border-2 transition-all"
-                    style={{
-                      backgroundColor: selected ? t.color : "white",
-                      color: selected ? "white" : t.color,
-                      borderColor: t.color,
-                    }}
-                  >
-                    {t.name}
-                  </button>
-                )
-              })}
-            </div>
-            {form.tags.length > 0 && (
-              <p className="mt-3 text-sm text-gray-400">已選：{form.tags.join("、")}</p>
-            )}
-          </section>
-        )}
-
         {/* 備註 */}
         <section className="bg-white rounded-2xl p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-700 mb-5 pb-3 border-b border-gray-100">備註</h2>
