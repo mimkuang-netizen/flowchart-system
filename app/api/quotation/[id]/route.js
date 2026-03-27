@@ -22,6 +22,7 @@ export async function PUT(request, { params }) {
   delete header.created_at
   delete header.quotation_items
   delete header.customer_id
+  header.created_at = new Date().toISOString()
 
   const { data, error } = await supabase
     .from('quotations')
