@@ -38,9 +38,10 @@ function ProductPickerModal({ products, onPick, onClose }) {
 
   useEffect(() => { inputRef.current?.focus() }, [])
 
-  const filtered = products.filter(p =>
-    p.name?.includes(search) || p.code?.includes(search)
-  ).slice(0, 50)
+  const filtered = products.filter(p => {
+    const s = search.toLowerCase()
+    return p.name?.toLowerCase().includes(s) || p.code?.toLowerCase().includes(s)
+  }).slice(0, 50)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
@@ -240,9 +241,10 @@ export default function QuotationForm() {
     router.push("/quotation")
   }
 
-  const filteredCustomers = customers.filter(c =>
-    c.short_name?.includes(customerQ) || c.code?.includes(customerQ)
-  ).slice(0, 8)
+  const filteredCustomers = customers.filter(c => {
+    const q = customerQ.toLowerCase()
+    return c.short_name?.toLowerCase().includes(q) || c.code?.toLowerCase().includes(q)
+  }).slice(0, 8)
 
   const inputCls = "w-full px-3 py-2.5 text-lg border border-gray-300 rounded-xl focus:outline-none focus:border-orange-400"
 
