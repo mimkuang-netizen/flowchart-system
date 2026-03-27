@@ -60,9 +60,11 @@ export default function QuotationPrint() {
               <p>地　址：709台南市安南區工業三路85號</p>
             </div>
           </div>
-          <div className="text-right">
+          <div className="flex flex-col items-end">
             <h2 className="text-3xl font-bold tracking-widest text-gray-800">報價單</h2>
             <p className="text-sm text-gray-400 mt-1">頁次：1/1</p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="Master Mirror" className="mt-2" style={{ height: "50px", objectFit: "contain" }} />
           </div>
         </div>
 
@@ -75,16 +77,16 @@ export default function QuotationPrint() {
             <span className="font-semibold">{data.customer_name}</span>
           </div>
           <div className="flex">
-            <span className="text-gray-500 w-20 shrink-0">報價日期：</span>
-            <span>{formatDate(data.quote_date)}</span>
+            <span className="text-gray-500 w-20 shrink-0">報價單號：</span>
+            <span className="font-mono">{data.quote_no}</span>
           </div>
           <div className="flex">
             <span className="text-gray-500 w-20 shrink-0">聯 絡 人：</span>
             <span>{data.contact_person || "—"}</span>
           </div>
           <div className="flex">
-            <span className="text-gray-500 w-20 shrink-0">報價單號：</span>
-            <span className="font-mono">{data.quote_no}</span>
+            <span className="text-gray-500 w-20 shrink-0">報價日期：</span>
+            <span>{formatDate(data.quote_date)}</span>
           </div>
           <div className="flex">
             <span className="text-gray-500 w-20 shrink-0">業　　務：</span>
