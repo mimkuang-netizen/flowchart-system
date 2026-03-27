@@ -224,7 +224,7 @@ export default function SalesForm() {
               <div>
                 <label className="block text-base font-semibold text-gray-600 mb-1">送貨地址</label>
                 <div className="px-4 py-2.5 bg-gray-50 text-lg rounded-xl border border-gray-200 text-gray-700">
-                  {selectedCustomer.address || "—"}
+                  {[selectedCustomer.delivery_zip, selectedCustomer.delivery_city, selectedCustomer.delivery_district, selectedCustomer.delivery_address].filter(Boolean).join("") || "—"}
                 </div>
               </div>
             </div>

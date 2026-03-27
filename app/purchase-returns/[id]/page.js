@@ -138,7 +138,7 @@ export default function PurchaseReturnFormPage() {
     setForm((prev) => ({
       ...prev,
       vendor_id: vendorId,
-      vendor_name: vendor ? vendor.name : '',
+      vendor_name: vendor ? (vendor.short_name || vendor.name) : '',
     }));
   };
 
@@ -310,7 +310,7 @@ export default function PurchaseReturnFormPage() {
                 <option value="">請選擇廠商</option>
                 {vendors.map((v) => (
                   <option key={v.id} value={v.id}>
-                    {v.name}
+                    {v.short_name || v.name}
                   </option>
                 ))}
               </select>

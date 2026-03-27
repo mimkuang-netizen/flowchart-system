@@ -17,6 +17,8 @@ export default function PurchaseReturnsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   const fetchReturns = async () => {
     setLoading(true);
@@ -37,11 +39,13 @@ export default function PurchaseReturnsPage() {
   };
 
   useEffect(() => {
+    setPage(1);
     fetchReturns();
   }, [statusFilter]);
 
   const handleSearch = (e) => {
     e.preventDefault();
+    setPage(1);
     fetchReturns();
   };
 
@@ -138,7 +142,7 @@ export default function PurchaseReturnsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-purple-50">
-                  {returns.map((item) => (
+                  {returns.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((item) => (
                     <tr key={item.id} className="hover:bg-purple-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Link href={`/purchase-returns/${item.id}`} className="text-purple-600 hover:text-purple-900 font-medium">
@@ -180,6 +184,16 @@ export default function PurchaseReturnsPage() {
             </div>
           )}
         </div>
+        {Math.ceil(returns.length / PAGE_SIZE) > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <button onClick={() => setPage(1)} disabled={page === 1} className="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-50">第一頁</button>
+            <button onClick={() => setPage(p => p - 1)} disabled={page === 1} className="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-50">上一頁</button>
+            <span className="px-3 py-1.5 text-sm">{page} / {Math.ceil(returns.length / PAGE_SIZE)}</span>
+            <button onClick={() => setPage(p => p + 1)} disabled={page === Math.ceil(returns.length / PAGE_SIZE)} className="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-50">下一頁</button>
+            <button onClick={() => setPage(Math.ceil(returns.length / PAGE_SIZE))} disabled={page === Math.ceil(returns.length / PAGE_SIZE)} className="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-50">最後一頁</button>
+          </div>
+        )}
+        <p className="text-base text-gray-400 mt-2">共 {returns.length} 筆</p>
       </div>
     </div>
   );

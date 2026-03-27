@@ -65,7 +65,7 @@ export default function SalesPrintPage() {
         <div>銷貨日期：{order.order_date}</div>
         <div>客戶名稱：<b>{order.customer_name}</b></div>
         <div>聯絡電話：{customer?.phone || customer?.mobile || "—"}</div>
-        <div>送貨地址：{customer?.address || "—"}</div>
+        <div>送貨地址：{customer ? [customer.delivery_zip, customer.delivery_city, customer.delivery_district, customer.delivery_address].filter(Boolean).join("") || "—" : "—"}</div>
         <div>{order.invoice_no ? `發票號碼：${order.invoice_no}` : ""}</div>
         {order.invoice_type && <div>發票聯式：{order.invoice_type}</div>}
       </div>

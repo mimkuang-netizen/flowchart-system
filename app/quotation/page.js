@@ -22,6 +22,8 @@ export default function QuotationList() {
   const [status, setStatus] = useState("")
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState(null)
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 20
 
   const fetchData = async () => {
     setLoading(true)
@@ -34,7 +36,7 @@ export default function QuotationList() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchData() }, [q, status])
+  useEffect(() => { setPage(1); fetchData() }, [q, status])
 
   const handleDelete = async () => {
     await fetch(`/api/quotation/${deleteId}`, { method: "DELETE" })
@@ -109,7 +111,7 @@ export default function QuotationList() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {items.map(item => (
+                {items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(item => (
                   <tr key={item.id} className="hover:bg-orange-50 transition-colors">
                     <td className="px-5 py-4 text-lg font-mono font-semibold text-orange-600">{item.quote_no}</td>
                     <td className="px-5 py-4 text-lg">{item.customer_name}</td>
@@ -136,6 +138,15 @@ export default function QuotationList() {
             </table>
           )}
         </div>
+        {Math.ceil(items.length / PAGE_SIZE) > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <button onClick={() => setPage(1)} disabled={page === 1} className="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-50">第一頁</button>
+            <button onClick={() => setPage(p => p - 1)} disabled={page === 1} className="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-50">上一頁</button>
+            <span className="px-3 py-1.5 text-sm">{page} / {Math.ceil(items.length / PAGE_SIZE)}</span>
+            <button onClick={() => setPage(p => p + 1)} disabled={page === Math.ceil(items.length / PAGE_SIZE)} className="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-50">下一頁</button>
+            <button onClick={() => setPage(Math.ceil(items.length / PAGE_SIZE))} disabled={page === Math.ceil(items.length / PAGE_SIZE)} className="px-3 py-1.5 text-sm border rounded-lg disabled:opacity-30 hover:bg-gray-50">最後一頁</button>
+          </div>
+        )}
         <p className="text-base text-gray-400">共 {items.length} 筆</p>
       </main>
 

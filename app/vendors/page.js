@@ -64,7 +64,7 @@ export default function VendorsPage() {
 
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           {loading ? <div className="py-20 text-center text-gray-400 text-xl">載入中...</div>
-            : vendors.length === 0 ? <div className="py-20 text-center text-gray-400 text-xl">{search || activeTag ? "找不到符合的廠商" : "尚無廠商資料，請點「新增廠商」開始建立"}</div>
+            : vendors.length === 0 ? <div className="py-20 text-center text-gray-400 text-xl">{search ? "找不到符合的廠商" : "尚無廠商資料，請點「新增廠商」開始建立"}</div>
             : (
               <table className="w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
