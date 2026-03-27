@@ -6,9 +6,9 @@ import { Search, Plus, Pencil, Trash2, ClipboardList, ChevronLeft } from "lucide
 
 const STATUS_MAP = {
   draft:     { label: "草稿",   color: "bg-gray-100 text-gray-600" },
-  sent:      { label: "已發出", color: "bg-blue-100 text-blue-700" },
-  partial:   { label: "部分進貨", color: "bg-yellow-100 text-yellow-700" },
-  completed: { label: "已完成", color: "bg-green-100 text-green-700" },
+  confirmed: { label: "已確認", color: "bg-blue-100 text-blue-700" },
+  received:  { label: "已到貨", color: "bg-green-100 text-green-700" },
+  cancelled: { label: "已取消", color: "bg-red-100 text-red-700" },
 }
 
 export default function PurchaseList() {

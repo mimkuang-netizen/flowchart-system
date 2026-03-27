@@ -12,7 +12,8 @@ export async function PUT(request, { params }) {
   const { id } = await params
   const body = await request.json()
   const { items, ...header } = body
-  delete header.id; delete header.created_at; delete header.purchase_order_items
+  delete header.id; delete header.purchase_order_items
+  header.created_at = new Date().toISOString()
   const { data, error } = await supabase.from('purchase_orders').update(header).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   await supabase.from('purchase_order_items').delete().eq('po_id', id)

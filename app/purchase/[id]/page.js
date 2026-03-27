@@ -6,8 +6,8 @@ import Link from "next/link"
 import { ChevronLeft, Save, ClipboardList, Plus, Trash2, Search } from "lucide-react"
 
 const TAX_TYPES = [{ value: "taxed", label: "含稅（外加5%）" }, { value: "included", label: "含稅（內含）" }, { value: "tax_free", label: "免稅" }]
-const STATUS_OPTS = [{ value: "draft", label: "草稿" }, { value: "sent", label: "已發出" }, { value: "partial", label: "部分進貨" }, { value: "completed", label: "已完成" }]
-const EMPTY_ITEM = { product_code: "", product_name: "", unit: "", quantity: 1, unit_price: 0, amount: 0, received_qty: 0, notes: "" }
+const STATUS_OPTS = [{ value: "draft", label: "草稿" }, { value: "confirmed", label: "已確認" }, { value: "received", label: "已到貨" }, { value: "cancelled", label: "已取消" }]
+const EMPTY_ITEM = { product_code: "", product_name: "", unit: "", quantity: 1, unit_price: 0, discount: 100, amount: 0, notes: "" }
 
 function genNo() {
   const d = new Date()
@@ -57,8 +57,8 @@ export default function PurchaseForm() {
       const updated = prev.map((item, i) => {
         if (i !== index) return item
         const next = { ...item, [field]: value }
-        if (["quantity", "unit_price"].includes(field))
-          next.amount = Math.round(Number(next.quantity) * Number(next.unit_price) * 100) / 100
+        if (["quantity", "unit_price", "discount"].includes(field))
+          next.amount = Math.round(Number(next.quantity) * Number(next.unit_price) * (Number(next.discount) / 100) * 100) / 100
         return next
       })
       setForm(f => ({ ...f, ...calcTotals(updated, f.tax_type) }))
@@ -73,8 +73,8 @@ export default function PurchaseForm() {
     setItems(prev => {
       const updated = prev.map((item, i) => {
         if (i !== index) return item
-        const qty = Number(item.quantity) || 1; const price = Number(product.cost_price) || Number(product.retail_price) || 0
-        return { ...item, product_id: product.id, product_code: product.code, product_name: product.name, unit: product.unit || "", unit_price: price, amount: qty * price }
+        const qty = Number(item.quantity) || 1; const price = Number(product.cost_price) || Number(product.retail_price) || 0; const disc = Number(item.discount) || 100
+        return { ...item, product_id: product.id, product_code: product.code, product_name: product.name, unit: product.unit || "", unit_price: price, amount: Math.round(qty * price * (disc / 100) * 100) / 100 }
       })
       setForm(f => ({ ...f, ...calcTotals(updated, f.tax_type) }))
       return updated
@@ -163,7 +163,7 @@ export default function PurchaseForm() {
           <div className="overflow-x-auto">
             <table className="w-full text-base">
               <thead><tr className="bg-gray-50 text-gray-500">
-                {["#", "品號", "品名", "單位", "採購數量", "單價", "金額", ""].map(h => <th key={h} className="px-3 py-2 text-left">{h}</th>)}
+                {["#", "品號", "品名", "單位", "數量", "單價", "折扣%", "金額", ""].map(h => <th key={h} className="px-3 py-2 text-left">{h}</th>)}
               </tr></thead>
               <tbody className="divide-y divide-gray-50">
                 {items.map((item, idx) => (
@@ -200,6 +200,7 @@ export default function PurchaseForm() {
                     <td className="px-3 py-2 w-16"><input value={item.unit} onChange={e => updateItem(idx, "unit", e.target.value)} className="w-full px-2 py-1.5 border border-gray-200 rounded-lg" /></td>
                     <td className="px-3 py-2 w-24"><input type="number" min={0} value={item.quantity} onChange={e => updateItem(idx, "quantity", e.target.value)} className="w-full px-2 py-1.5 text-right border border-gray-200 rounded-lg" /></td>
                     <td className="px-3 py-2 w-28"><input type="number" min={0} value={item.unit_price} onChange={e => updateItem(idx, "unit_price", e.target.value)} className="w-full px-2 py-1.5 text-right border border-gray-200 rounded-lg" /></td>
+                    <td className="px-3 py-2 w-20"><input type="number" min={0} max={100} value={item.discount} onChange={e => updateItem(idx, "discount", e.target.value)} className="w-full px-2 py-1.5 text-right border border-gray-200 rounded-lg" /></td>
                     <td className="px-3 py-2 w-28 text-right font-semibold">${Number(item.amount).toLocaleString()}</td>
                     <td className="px-3 py-2"><button onClick={() => removeItem(idx)} className="text-gray-300 hover:text-red-400"><Trash2 size={16} /></button></td>
                   </tr>
