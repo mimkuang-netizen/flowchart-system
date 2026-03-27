@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, Save, ShoppingCart, Plus, Trash2, Search } from "lucide-react"
+import { ChevronLeft, Save, ShoppingCart, Plus, Trash2, Search, Printer, FileText, ExternalLink, Loader2 } from "lucide-react"
 
 const TAX_TYPES = [
   { value: "taxed", label: "含稅（外加5%）" },
@@ -32,8 +32,10 @@ export default function SalesForm() {
 
   const [form, setForm] = useState({
     order_no: genNo(), customer_name: "", order_date: today, delivery_date: "",
-    status: "draft", tax_type: "taxed", subtotal: 0, tax_amount: 0, total: 0, quote_no: "", notes: ""
+    status: "draft", tax_type: "taxed", subtotal: 0, tax_amount: 0, total: 0, quote_no: "", notes: "",
+    invoice_type: "", invoice_no: "", invoice_date: "", invoice_url: "",
   })
+  const [invoiceLoading, setInvoiceLoading] = useState(false)
   const [items, setItems] = useState([{ ...EMPTY_ITEM }])
   const [customers, setCustomers] = useState([])
   const [products, setProducts] = useState([])
@@ -296,12 +298,80 @@ export default function SalesForm() {
             className="w-full px-3 py-2 text-lg border border-gray-300 rounded-xl focus:outline-none focus:border-orange-400 resize-none" />
         </section>
 
-        <div className="flex justify-end gap-3 pb-8">
-          <Link href="/sales" className="px-8 py-3 border-2 border-gray-200 text-lg rounded-xl hover:bg-gray-50">取消</Link>
-          <button onClick={handleSave} disabled={saving}
-            className="flex items-center gap-2 px-8 py-3 bg-orange-500 text-white text-lg font-semibold rounded-xl hover:bg-orange-600 disabled:opacity-50">
-            <Save size={18} />{saving ? "儲存中..." : "儲存"}
-          </button>
+        {/* 發票資訊 */}
+        <section className="bg-white rounded-2xl p-6 shadow-sm">
+          <h2 className="text-xl font-bold text-gray-700 mb-5 pb-3 border-b border-gray-100 flex items-center gap-2">
+            <FileText size={20} className="text-blue-500" /> 發票資訊
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+            <div className="md:col-span-2">
+              <label className="block text-base font-semibold text-gray-600 mb-1">電子發票連結</label>
+              <div className="flex gap-2">
+                <input value={form.invoice_url || ""} onChange={e => setForm(f => ({ ...f, invoice_url: e.target.value }))}
+                  placeholder="貼上電子發票連結..." className={inputCls + " flex-1"} />
+                <button onClick={async () => {
+                  if (!form.invoice_url?.trim()) return
+                  setInvoiceLoading(true)
+                  try {
+                    const res = await fetch(`/api/invoice-lookup?url=${encodeURIComponent(form.invoice_url.trim())}`)
+                    const data = await res.json()
+                    if (data.invoice_no || data.invoice_date) {
+                      setForm(f => ({
+                        ...f,
+                        invoice_no: data.invoice_no || f.invoice_no,
+                        invoice_date: data.invoice_date || f.invoice_date,
+                        invoice_type: data.invoice_type || f.invoice_type || "電子發票",
+                      }))
+                    }
+                  } catch {}
+                  setInvoiceLoading(false)
+                }} disabled={invoiceLoading} className="px-4 py-2 bg-blue-500 text-white text-base font-semibold rounded-xl hover:bg-blue-600 disabled:opacity-50 whitespace-nowrap">
+                  {invoiceLoading ? <Loader2 size={18} className="animate-spin" /> : "讀取發票"}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-base font-semibold text-gray-600 mb-1">發票聯式</label>
+              <select value={form.invoice_type || ""} onChange={e => setForm(f => ({ ...f, invoice_type: e.target.value }))} className={`${inputCls} bg-white`}>
+                <option value="">未開立</option>
+                <option value="電子發票">電子發票</option>
+                <option value="二聯式">二聯式</option>
+                <option value="三聯式">三聯式</option>
+                <option value="不開">不開</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-base font-semibold text-gray-600 mb-1">發票號碼</label>
+              <input value={form.invoice_no || ""} onChange={e => setForm(f => ({ ...f, invoice_no: e.target.value }))} placeholder="例：ZJ86347899" className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-base font-semibold text-gray-600 mb-1">發票日期</label>
+              <input type="date" value={form.invoice_date || ""} onChange={e => setForm(f => ({ ...f, invoice_date: e.target.value }))} className={inputCls} />
+            </div>
+            {form.invoice_url && (
+              <div className="flex items-end">
+                <a href={form.invoice_url} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2.5 text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 text-base font-semibold">
+                  <ExternalLink size={16} /> 開啟發票連結
+                </a>
+              </div>
+            )}
+          </div>
+        </section>
+
+        <div className="flex justify-between pb-8">
+          {!isNew && (
+            <Link href={`/sales/${id}/print`} className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white text-lg font-semibold rounded-xl hover:bg-blue-600">
+              <Printer size={18} /> 列印銷貨單
+            </Link>
+          )}
+          <div className="flex gap-3 ml-auto">
+            <Link href="/sales" className="px-8 py-3 border-2 border-gray-200 text-lg rounded-xl hover:bg-gray-50">取消</Link>
+            <button onClick={handleSave} disabled={saving}
+              className="flex items-center gap-2 px-8 py-3 bg-orange-500 text-white text-lg font-semibold rounded-xl hover:bg-orange-600 disabled:opacity-50">
+              <Save size={18} />{saving ? "儲存中..." : "儲存"}
+            </button>
+          </div>
         </div>
       </main>
       {(showCustomerList || showProductPicker !== null) && (
