@@ -2,112 +2,31 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, Plus, Pencil, Trash2, Truck, ChevronLeft, Tag, X } from "lucide-react"
-
-const PRESET_COLORS = ["#f97316","#ef4444","#22c55e","#3b82f6","#8b5cf6","#eab308","#ec4899","#6b7280"]
-
-function TagBadge({ name, color }) {
-  return (
-    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium text-white" style={{ backgroundColor: color }}>
-      {name}
-    </span>
-  )
-}
-
-function TagManagerModal({ onClose, onRefresh }) {
-  const [tags, setTags] = useState([])
-  const [newName, setNewName] = useState("")
-  const [newColor, setNewColor] = useState("#3b82f6")
-  const [saving, setSaving] = useState(false)
-
-  const fetchTags = async () => {
-    const res = await fetch("/api/tags")
-    setTags(await res.json())
-  }
-  useEffect(() => { fetchTags() }, [])
-
-  const handleAdd = async () => {
-    if (!newName.trim()) return
-    setSaving(true)
-    await fetch("/api/tags", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newName.trim(), color: newColor }) })
-    setNewName("")
-    await fetchTags(); onRefresh(); setSaving(false)
-  }
-  const handleDelete = async (id) => {
-    await fetch(`/api/tags/${id}`, { method: "DELETE" })
-    await fetchTags(); onRefresh()
-  }
-
-  return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-md">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2"><Tag size={20} className="text-blue-600" />管理標籤</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={22} /></button>
-        </div>
-        <div className="flex gap-2 mb-5">
-          <input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === "Enter" && handleAdd()} placeholder="標籤名稱"
-            className="flex-1 px-3 py-2 text-base border border-gray-300 rounded-xl focus:outline-none focus:border-blue-400" />
-          <div className="flex gap-1 items-center flex-wrap w-36">
-            {PRESET_COLORS.map(c => (
-              <button key={c} onClick={() => setNewColor(c)} className="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110"
-                style={{ backgroundColor: c, borderColor: newColor === c ? "#1f2937" : "transparent" }} />
-            ))}
-          </div>
-          <button onClick={handleAdd} disabled={saving || !newName.trim()}
-            className="px-4 py-2 bg-blue-600 text-white text-base font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50">新增</button>
-        </div>
-        <div className="space-y-2 max-h-64 overflow-y-auto">
-          {tags.length === 0 ? <p className="text-center text-gray-400 py-6">尚無標籤</p> : tags.map(t => (
-            <div key={t.id} className="flex items-center justify-between py-2 border-b border-gray-100">
-              <TagBadge name={t.name} color={t.color} />
-              <button onClick={() => handleDelete(t.id)} className="text-red-400 hover:text-red-600"><Trash2 size={16} /></button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
+import { Search, Plus, Pencil, Trash2, Truck, ChevronLeft } from "lucide-react"
 
 export default function VendorsPage() {
   const [vendors, setVendors] = useState([])
-  const [tags, setTags] = useState([])
   const [search, setSearch] = useState("")
-  const [activeTag, setActiveTag] = useState("")
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState(null)
-  const [showTagManager, setShowTagManager] = useState(false)
 
-  const fetchTags = async () => {
-    const res = await fetch("/api/tags")
-    const data = await res.json()
-    setTags(Array.isArray(data) ? data : [])
-  }
-  const fetchVendors = async (q = "", tag = "") => {
+  const fetchVendors = async (q = "") => {
     setLoading(true)
     const params = new URLSearchParams()
     if (q) params.set("q", q)
-    if (tag) params.set("tag", tag)
     const res = await fetch(`/api/vendors?${params}`)
     const data = await res.json()
     setVendors(Array.isArray(data) ? data : [])
     setLoading(false)
   }
 
-  useEffect(() => { fetchTags(); fetchVendors() }, [])
+  useEffect(() => { fetchVendors() }, [])
 
-  const handleSearch = e => { e.preventDefault(); fetchVendors(search, activeTag) }
-  const handleTagFilter = tag => {
-    const next = activeTag === tag ? "" : tag
-    setActiveTag(next); fetchVendors(search, next)
-  }
+  const handleSearch = e => { e.preventDefault(); fetchVendors(search) }
   const handleDelete = async id => {
     await fetch(`/api/vendors/${id}`, { method: "DELETE" })
-    setDeleteTarget(null); fetchVendors(search, activeTag)
+    setDeleteTarget(null); fetchVendors(search)
   }
-  const getTagColor = name => tags.find(t => t.name === name)?.color || "#6b7280"
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -124,10 +43,6 @@ export default function VendorsPage() {
             </div>
           </div>
           <div className="flex gap-3">
-            <button onClick={() => setShowTagManager(true)}
-              className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-base font-semibold rounded-xl hover:bg-gray-50">
-              <Tag size={18} className="text-green-600" />管理標籤
-            </button>
             <Link href="/vendors/new"
               className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white text-lg font-semibold rounded-xl hover:bg-green-700 shadow-sm">
               <Plus size={20} />新增廠商
@@ -147,21 +62,6 @@ export default function VendorsPage() {
           <button type="submit" className="px-6 py-2.5 bg-green-600 text-white text-lg font-semibold rounded-xl hover:bg-green-700">查詢</button>
         </form>
 
-        {tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-5 items-center">
-            <span className="text-base text-gray-500 font-medium">標籤篩選：</span>
-            <button onClick={() => handleTagFilter("")}
-              className={`px-4 py-1.5 rounded-full text-base font-semibold border-2 transition-colors ${activeTag === "" ? "bg-gray-700 text-white border-gray-700" : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"}`}>全部</button>
-            {tags.map(t => (
-              <button key={t.id} onClick={() => handleTagFilter(t.name)}
-                className="px-4 py-1.5 rounded-full text-base font-semibold border-2 transition-all"
-                style={{ backgroundColor: activeTag === t.name ? t.color : "white", color: activeTag === t.name ? "white" : t.color, borderColor: t.color }}>
-                {t.name}
-              </button>
-            ))}
-          </div>
-        )}
-
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           {loading ? <div className="py-20 text-center text-gray-400 text-xl">載入中...</div>
             : vendors.length === 0 ? <div className="py-20 text-center text-gray-400 text-xl">{search || activeTag ? "找不到符合的廠商" : "尚無廠商資料，請點「新增廠商」開始建立"}</div>
@@ -176,7 +76,6 @@ export default function VendorsPage() {
                     <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">電話</th>
                     <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">聯絡人</th>
                     <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">手機</th>
-                    <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">標籤</th>
                     <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">營業地址</th>
                   </tr>
                 </thead>
@@ -201,11 +100,6 @@ export default function VendorsPage() {
                       <td className="px-4 py-3 text-base text-gray-600">{v.phone || "—"}</td>
                       <td className="px-4 py-3 text-base text-gray-600">{v.contact || "—"}</td>
                       <td className="px-4 py-3 text-base text-gray-600">{v.mobile || "—"}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {(v.tags || []).map(tag => <TagBadge key={tag} name={tag} color={getTagColor(tag)} />)}
-                        </div>
-                      </td>
                       <td className="px-4 py-3 text-base text-gray-500 max-w-xs truncate">
                         {[v.business_city, v.business_district, v.business_address].filter(Boolean).join("") || "—"}
                       </td>
@@ -232,7 +126,6 @@ export default function VendorsPage() {
           </div>
         </div>
       )}
-      {showTagManager && <TagManagerModal onClose={() => setShowTagManager(false)} onRefresh={fetchTags} />}
     </div>
   )
 }
