@@ -24,7 +24,8 @@ export default function PurchaseList() {
     if (q) p.set("q", q)
     if (status) p.set("status", status)
     const res = await fetch(`/api/purchase?${p}`)
-    setItems(await res.json())
+    const data = await res.json()
+    setItems(Array.isArray(data) ? data : [])
     setLoading(false)
   }
 

@@ -29,7 +29,8 @@ export default function QuotationList() {
     if (q) params.set("q", q)
     if (status) params.set("status", status)
     const res = await fetch(`/api/quotation?${params}`)
-    setItems(await res.json())
+    const data = await res.json()
+    setItems(Array.isArray(data) ? data : [])
     setLoading(false)
   }
 

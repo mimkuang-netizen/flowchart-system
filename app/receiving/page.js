@@ -13,7 +13,8 @@ export default function ReceivingList() {
   const fetchData = async () => {
     setLoading(true)
     const res = await fetch(`/api/receiving${q ? `?q=${q}` : ""}`)
-    setItems(await res.json())
+    const data = await res.json()
+    setItems(Array.isArray(data) ? data : [])
     setLoading(false)
   }
 

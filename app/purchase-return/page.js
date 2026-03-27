@@ -13,7 +13,8 @@ export default function PurchaseReturnList() {
   const fetchData = async () => {
     setLoading(true)
     const res = await fetch(`/api/purchase-return${q ? `?q=${q}` : ""}`)
-    setItems(await res.json())
+    const data = await res.json()
+    setItems(Array.isArray(data) ? data : [])
     setLoading(false)
   }
 

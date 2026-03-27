@@ -29,7 +29,8 @@ export default function AccountingPage() {
     const p = new URLSearchParams({ from: dateFrom, to: dateTo })
     if (tab !== "all") p.set("type", tab)
     const res = await fetch(`/api/accounting?${p}`)
-    setEntries(await res.json())
+    const json = await res.json()
+    setEntries(Array.isArray(json) ? json : [])
     setLoading(false)
   }
 
