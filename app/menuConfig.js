@@ -36,7 +36,7 @@ export const flowSections = [
         id: "sales-return",
         label: "銷貨退回",
         icon: "RotateCcw",
-        href: "/sales-return",
+        href: "/sales-returns",
         description: "客戶退貨作業",
         active: true,
       },
