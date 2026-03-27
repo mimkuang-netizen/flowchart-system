@@ -204,6 +204,18 @@ export default function SalesForm() {
           {selectedCustomer && (
             <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+                <label className="block text-base font-semibold text-gray-600 mb-1">公司名稱</label>
+                <div className="px-4 py-2.5 bg-gray-50 text-lg rounded-xl border border-gray-200 text-gray-700">
+                  {selectedCustomer.full_name || "—"}
+                </div>
+              </div>
+              <div>
+                <label className="block text-base font-semibold text-gray-600 mb-1">統一編號</label>
+                <div className="px-4 py-2.5 bg-gray-50 text-lg rounded-xl border border-gray-200 text-gray-700">
+                  {selectedCustomer.tax_id || "—"}
+                </div>
+              </div>
+              <div>
                 <label className="block text-base font-semibold text-gray-600 mb-1">聯絡電話</label>
                 <div className="px-4 py-2.5 bg-gray-50 text-lg rounded-xl border border-gray-200 text-gray-700">
                   {selectedCustomer.phone || selectedCustomer.mobile || "—"}
