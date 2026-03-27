@@ -57,6 +57,15 @@ export default function SalesForm() {
           const { sales_order_items, ...header } = data
           setForm(header)
           setItems(sales_order_items?.length > 0 ? sales_order_items.sort((a, b) => a.sort_order - b.sort_order) : [{ ...EMPTY_ITEM }])
+          // Load customer info for address/phone display
+          if (header.customer_name) {
+            fetch(`/api/customers?q=${encodeURIComponent(header.customer_name)}`)
+              .then(r => r.json())
+              .then(custs => {
+                const match = custs.find(c => c.short_name === header.customer_name) || custs[0]
+                if (match) setSelectedCustomer(match)
+              }).catch(() => {})
+          }
           setLoading(false)
         })
         .catch(() => { setError("找不到此銷貨單"); setLoading(false) })
@@ -89,7 +98,8 @@ export default function SalesForm() {
   const addItem = () => setItems(prev => [...prev, { ...EMPTY_ITEM }])
   const removeItem = (i) => setItems(prev => { const u = prev.filter((_, idx) => idx !== i); setForm(f => ({ ...f, ...calcTotals(u, f.tax_type) })); return u })
 
-  const pickCustomer = (c) => { setForm(f => ({ ...f, customer_name: c.short_name, customer_id: c.id })); setShowCustomerList(false) }
+  const [selectedCustomer, setSelectedCustomer] = useState(null)
+  const pickCustomer = (c) => { setForm(f => ({ ...f, customer_name: c.short_name, customer_id: c.id })); setSelectedCustomer(c); setShowCustomerList(false) }
   const pickProduct = (product, index) => {
     setItems(prev => {
       const updated = prev.map((item, i) => {
@@ -190,6 +200,23 @@ export default function SalesForm() {
               </select>
             </div>
           </div>
+          {/* 客戶送貨資訊 */}
+          {selectedCustomer && (
+            <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-base font-semibold text-gray-600 mb-1">聯絡電話</label>
+                <div className="px-4 py-2.5 bg-gray-50 text-lg rounded-xl border border-gray-200 text-gray-700">
+                  {selectedCustomer.phone || selectedCustomer.mobile || "—"}
+                </div>
+              </div>
+              <div>
+                <label className="block text-base font-semibold text-gray-600 mb-1">送貨地址</label>
+                <div className="px-4 py-2.5 bg-gray-50 text-lg rounded-xl border border-gray-200 text-gray-700">
+                  {selectedCustomer.address || "—"}
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* 商品明細 */}
