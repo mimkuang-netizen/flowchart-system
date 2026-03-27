@@ -283,10 +283,12 @@ export default function CustomersPage() {
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-500 w-10">序</th>
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">客戶代號</th>
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">客戶簡稱</th>
+                  <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">公司全名</th>
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">電話</th>
+                  <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">傳真</th>
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">主聯絡人</th>
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">標籤</th>
-                  <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">送貨地址</th>
+                  <th className="px-4 py-3 text-right text-base font-semibold text-gray-600">購買記錄</th>
                 </tr>
               </thead>
               <tbody>
@@ -311,7 +313,9 @@ export default function CustomersPage() {
                     <td className="px-4 py-3 text-base text-gray-500">{i + 1}</td>
                     <td className="px-4 py-3 text-base font-medium text-gray-800">{c.code}</td>
                     <td className="px-4 py-3 text-base text-gray-800">{c.short_name}</td>
+                    <td className="px-4 py-3 text-base text-gray-600 max-w-[180px] truncate">{c.full_name || "—"}</td>
                     <td className="px-4 py-3 text-base text-gray-600">{c.phone || "—"}</td>
+                    <td className="px-4 py-3 text-base text-gray-600">{c.fax || "—"}</td>
                     <td className="px-4 py-3 text-base text-gray-600">{c.contact || "—"}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
@@ -320,8 +324,10 @@ export default function CustomersPage() {
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-base text-gray-500 max-w-xs truncate">
-                      {[c.delivery_city, c.delivery_district, c.delivery_address].filter(Boolean).join("") || "—"}
+                    <td className="px-4 py-3 text-base text-right">
+                      {c.order_count != null ? (
+                        <span className="text-orange-600 font-semibold">{c.order_count} 筆</span>
+                      ) : "—"}
                     </td>
                   </tr>
                 ))}

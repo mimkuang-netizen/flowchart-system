@@ -20,7 +20,24 @@ export async function GET(request) {
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+
+  // Attach order count from sales_orders
+  const { data: orders } = await supabase
+    .from('sales_orders')
+    .select('customer_name')
+  const orderMap = {}
+  if (orders) {
+    orders.forEach(o => {
+      const name = o.customer_name
+      orderMap[name] = (orderMap[name] || 0) + 1
+    })
+  }
+  const enriched = data.map(c => ({
+    ...c,
+    order_count: orderMap[c.short_name] || 0
+  }))
+
+  return NextResponse.json(enriched)
 }
 
 export async function POST(request) {
