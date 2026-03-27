@@ -5,6 +5,7 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url)
   const q = searchParams.get('q') || ''
   const status = searchParams.get('status') || ''
+  const customer = searchParams.get('customer') || ''
 
   let query = supabase
     .from('quotations')
@@ -13,6 +14,7 @@ export async function GET(request) {
 
   if (q) query = query.or(`quote_no.ilike.%${q}%,customer_name.ilike.%${q}%`)
   if (status) query = query.eq('status', status)
+  if (customer) query = query.eq('customer_name', customer)
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

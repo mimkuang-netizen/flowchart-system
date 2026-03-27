@@ -21,20 +21,19 @@ export async function GET(request) {
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Attach order count from sales_orders
-  const { data: orders } = await supabase
-    .from('sales_orders')
-    .select('customer_name')
+  // Attach order count from sales_orders & quote count from quotations
+  const [{ data: orders }, { data: quotes }] = await Promise.all([
+    supabase.from('sales_orders').select('customer_name'),
+    supabase.from('quotations').select('customer_name'),
+  ])
   const orderMap = {}
-  if (orders) {
-    orders.forEach(o => {
-      const name = o.customer_name
-      orderMap[name] = (orderMap[name] || 0) + 1
-    })
-  }
+  if (orders) orders.forEach(o => { orderMap[o.customer_name] = (orderMap[o.customer_name] || 0) + 1 })
+  const quoteMap = {}
+  if (quotes) quotes.forEach(q => { quoteMap[q.customer_name] = (quoteMap[q.customer_name] || 0) + 1 })
   const enriched = data.map(c => ({
     ...c,
-    order_count: orderMap[c.short_name] || 0
+    order_count: orderMap[c.short_name] || 0,
+    quote_count: quoteMap[c.short_name] || 0,
   }))
 
   return NextResponse.json(enriched)

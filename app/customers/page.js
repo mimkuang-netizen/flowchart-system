@@ -286,9 +286,9 @@ export default function CustomersPage() {
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">公司全名</th>
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">電話</th>
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">傳真</th>
-                  <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">主聯絡人</th>
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">標籤</th>
-                  <th className="px-4 py-3 text-right text-base font-semibold text-gray-600">購買記錄</th>
+                  <th className="px-4 py-3 text-center text-base font-semibold text-gray-600">報價記錄</th>
+                  <th className="px-4 py-3 text-center text-base font-semibold text-gray-600">銷貨記錄</th>
                 </tr>
               </thead>
               <tbody>
@@ -316,7 +316,6 @@ export default function CustomersPage() {
                     <td className="px-4 py-3 text-base text-gray-600 max-w-[180px] truncate">{c.full_name || "—"}</td>
                     <td className="px-4 py-3 text-base text-gray-600">{c.phone || "—"}</td>
                     <td className="px-4 py-3 text-base text-gray-600">{c.fax || "—"}</td>
-                    <td className="px-4 py-3 text-base text-gray-600">{c.contact || "—"}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {(c.tags || []).map((tag) => (
@@ -324,10 +323,21 @@ export default function CustomersPage() {
                         ))}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-base text-right">
-                      {c.order_count != null ? (
-                        <span className="text-orange-600 font-semibold">{c.order_count} 筆</span>
-                      ) : "—"}
+                    <td className="px-4 py-3 text-center">
+                      <Link
+                        href={`/customers/${c.id}/quotations`}
+                        className="inline-block px-3 py-1 text-base font-semibold text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                      >
+                        {c.quote_count ?? 0} 筆
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Link
+                        href={`/customers/${c.id}/orders`}
+                        className="inline-block px-3 py-1 text-base font-semibold text-orange-600 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+                      >
+                        {c.order_count ?? 0} 筆
+                      </Link>
                     </td>
                   </tr>
                 ))}
