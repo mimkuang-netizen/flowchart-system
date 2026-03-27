@@ -22,41 +22,30 @@ export async function GET(request) {
     if (res.ok) {
       const html = await res.text()
 
-      // Parse giveme.com.tw format
-      // 發票號碼: TJ04872183
-      const noMatch = html.match(/發票號碼[^<]*?<[^>]*>[\s]*([A-Z]{2}\d{8})/i)
-        || html.match(/([A-Z]{2}\d{8})/i)
-      if (noMatch) result.invoice_no = noMatch[1].toUpperCase()
+      // Parse giveme.com.tw format: <div class="th">label</div><div class="td">value</div>
+      // Also handles standard <td> format
+      const trBlocks = html.match(/<div\s+class="tr"[^>]*>[\s\S]*?<\/div>\s*<\/div>/gi)
+        || html.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi)
+        || []
 
-      // 開立日期: 2025-10-15
-      const dateMatch = html.match(/開立日期[^<]*?<[^>]*>[\s]*([\d]{4}-[\d]{2}-[\d]{2})/)
-        || html.match(/開立日期[^<]*?<[^>]*>[\s]*([\d]{4}\/[\d]{2}\/[\d]{2})/)
-      if (dateMatch) result.invoice_date = dateMatch[1].replace(/\//g, '-')
+      for (const block of trBlocks) {
+        const thMatch = block.match(/<div\s+class="th"[^>]*>([\s\S]*?)<\/div>/i)
+          || block.match(/<td[^>]*>([\s\S]*?)<\/td>/i)
+        const tdMatch = block.match(/<div\s+class="td"[^>]*>([\s\S]*?)<\/div>/i)
+        if (!thMatch || !tdMatch) continue
 
-      // 發票金額: $3760
-      const amtMatch = html.match(/發票金額[^<]*?<[^>]*>[\s]*\$?([\d,]+)/)
-      if (amtMatch) result.invoice_amount = amtMatch[1].replace(/,/g, '')
+        const label = thMatch[1].replace(/<[^>]*>/g, '').trim()
+        const value = tdMatch[1].replace(/<[^>]*>/g, '').trim()
 
-      // Try extracting from table rows (giveme format: <td>header</td><td>value</td>)
-      if (!result.invoice_no) {
-        const rows = html.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || []
-        for (const row of rows) {
-          const cells = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || []
-          if (cells.length >= 2) {
-            const label = cells[0].replace(/<[^>]*>/g, '').trim()
-            const value = cells[1].replace(/<[^>]*>/g, '').trim()
-
-            if (label.includes('發票號碼') && /^[A-Z]{2}\d{8}$/i.test(value)) {
-              result.invoice_no = value.toUpperCase()
-            }
-            if (label.includes('開立日期') && /\d{4}[-/]\d{2}[-/]\d{2}/.test(value)) {
-              result.invoice_date = value.replace(/\//g, '-')
-            }
-            if (label.includes('發票金額')) {
-              const amt = value.replace(/[$,\s]/g, '')
-              if (/^\d+$/.test(amt)) result.invoice_amount = amt
-            }
-          }
+        if (label.includes('發票號碼') && /^[A-Z]{2}\d{8}$/i.test(value)) {
+          result.invoice_no = value.toUpperCase()
+        }
+        if (label.includes('開立日期') && /\d{4}[-/]\d{2}[-/]\d{2}/.test(value)) {
+          result.invoice_date = value.replace(/\//g, '-')
+        }
+        if (label.includes('發票金額')) {
+          const amt = value.replace(/[$,\s]/g, '')
+          if (/^\d+$/.test(amt)) result.invoice_amount = amt
         }
       }
     }
