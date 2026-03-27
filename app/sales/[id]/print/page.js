@@ -9,15 +9,27 @@ export default function SalesPrintPage() {
   const { id } = useParams()
   const [order, setOrder] = useState(null)
   const [items, setItems] = useState([])
+  const [customer, setCustomer] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetch(`/api/sales/${id}`)
       .then(r => r.json())
-      .then(data => {
+      .then(async data => {
         const { sales_order_items, ...header } = data
         setOrder(header)
         setItems(sales_order_items?.sort((a, b) => a.sort_order - b.sort_order) || [])
+        // Fetch customer info for address & phone
+        if (header.customer_name) {
+          try {
+            const cr = await fetch(`/api/customers?q=${encodeURIComponent(header.customer_name)}`)
+            const customers = await cr.json()
+            if (customers.length > 0) {
+              const match = customers.find(c => c.short_name === header.customer_name) || customers[0]
+              setCustomer(match)
+            }
+          } catch {}
+        }
         setLoading(false)
       })
   }, [id])
@@ -52,6 +64,8 @@ export default function SalesPrintPage() {
         <div>銷貨單號：<b>{order.order_no}</b></div>
         <div>銷貨日期：{order.order_date}</div>
         <div>客戶名稱：<b>{order.customer_name}</b></div>
+        <div>聯絡電話：{customer?.phone || customer?.mobile || "—"}</div>
+        <div>送貨地址：{customer?.address || "—"}</div>
         <div>{order.invoice_no ? `發票號碼：${order.invoice_no}` : ""}</div>
         {order.invoice_type && <div>發票聯式：{order.invoice_type}</div>}
       </div>
