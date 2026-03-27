@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, Plus, Pencil, Trash2, FileText, ChevronLeft } from "lucide-react"
+import { Search, Plus, Pencil, Trash2, FileText, ChevronLeft, Printer } from "lucide-react"
 
 const STATUS_MAP = {
   draft:    { label: "草稿",   color: "bg-gray-100 text-gray-600" },
@@ -119,10 +119,13 @@ export default function QuotationList() {
                     <td className="px-5 py-4 text-lg font-semibold text-gray-700">{formatMoney(item.total)}</td>
                     <td className="px-5 py-4">
                       <div className="flex gap-2">
-                        <Link href={`/quotation/${item.id}`} className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors">
+                        <Link href={`/quotation/${item.id}/print`} target="_blank" className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="列印">
+                          <Printer size={18} />
+                        </Link>
+                        <Link href={`/quotation/${item.id}`} className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors" title="編輯">
                           <Pencil size={18} />
                         </Link>
-                        <button onClick={() => setDeleteId(item.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+                        <button onClick={() => setDeleteId(item.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="刪除">
                           <Trash2 size={18} />
                         </button>
                       </div>
