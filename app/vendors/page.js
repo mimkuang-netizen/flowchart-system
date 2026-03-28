@@ -9,6 +9,25 @@ export default function VendorsPage() {
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [sortKey, setSortKey] = useState("code")
+  const [sortDir, setSortDir] = useState("asc")
+
+  const SortTh = ({ field, children, className = "" }) => (
+    <th className={`px-4 py-3 text-left text-base font-semibold text-gray-600 cursor-pointer hover:text-gray-800 select-none ${className}`}
+      onClick={() => { if (sortKey === field) setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortKey(field); setSortDir("asc") } }}>
+      <span className="flex items-center gap-1">{children} {sortKey === field ? (sortDir === "asc" ? "↑" : "↓") : ""}</span>
+    </th>
+  )
+
+  const sorted = [...vendors].sort((a, b) => {
+    let va = a[sortKey], vb = b[sortKey]
+    if (va == null) va = ""; if (vb == null) vb = ""
+    if (typeof va === "string") va = va.toLowerCase()
+    if (typeof vb === "string") vb = vb.toLowerCase()
+    if (va < vb) return sortDir === "asc" ? -1 : 1
+    if (va > vb) return sortDir === "asc" ? 1 : -1
+    return 0
+  })
 
   const fetchVendors = async (q = "") => {
     setLoading(true)
@@ -71,16 +90,16 @@ export default function VendorsPage() {
                   <tr>
                     <th className="px-4 py-3 text-left text-base font-semibold text-gray-500 w-20">執行</th>
                     <th className="px-4 py-3 text-left text-base font-semibold text-gray-500 w-10">序</th>
-                    <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">廠商代號</th>
-                    <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">廠商簡稱</th>
-                    <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">電話</th>
-                    <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">聯絡人</th>
+                    <SortTh field="code">廠商代號</SortTh>
+                    <SortTh field="short_name">廠商簡稱</SortTh>
+                    <SortTh field="phone">電話</SortTh>
+                    <SortTh field="contact">聯絡人</SortTh>
                     <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">手機</th>
                     <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">營業地址</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {vendors.map((v, i) => (
+                  {sorted.map((v, i) => (
                     <tr key={v.id} className="border-b border-gray-100 hover:bg-green-50 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex gap-2">

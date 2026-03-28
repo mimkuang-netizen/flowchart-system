@@ -133,6 +133,25 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [showTagManager, setShowTagManager] = useState(false)
+  const [sortKey, setSortKey] = useState("code")
+  const [sortDir, setSortDir] = useState("asc")
+
+  const SortTh = ({ field, children, className = "" }) => (
+    <th className={`px-4 py-3 text-left text-base font-semibold text-gray-600 cursor-pointer hover:text-gray-800 select-none ${className}`}
+      onClick={() => { if (sortKey === field) setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortKey(field); setSortDir("asc") } }}>
+      <span className="flex items-center gap-1">{children} {sortKey === field ? (sortDir === "asc" ? "↑" : "↓") : ""}</span>
+    </th>
+  )
+
+  const sorted = [...customers].sort((a, b) => {
+    let va = a[sortKey], vb = b[sortKey]
+    if (va == null) va = ""; if (vb == null) vb = ""
+    if (typeof va === "string") va = va.toLowerCase()
+    if (typeof vb === "string") vb = vb.toLowerCase()
+    if (va < vb) return sortDir === "asc" ? -1 : 1
+    if (va > vb) return sortDir === "asc" ? 1 : -1
+    return 0
+  })
 
   const fetchTags = async () => {
     const res = await fetch("/api/tags")
@@ -281,18 +300,18 @@ export default function CustomersPage() {
                 <tr>
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-500 w-20">執行</th>
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-500 w-10">序</th>
-                  <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">客戶代號</th>
-                  <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">客戶簡稱</th>
-                  <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">公司全名</th>
-                  <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">電話</th>
-                  <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">傳真</th>
+                  <SortTh field="code">客戶代號</SortTh>
+                  <SortTh field="short_name">客戶簡稱</SortTh>
+                  <SortTh field="full_name">公司全名</SortTh>
+                  <SortTh field="phone">電話</SortTh>
+                  <SortTh field="fax">傳真</SortTh>
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">標籤</th>
                   <th className="px-4 py-3 text-center text-base font-semibold text-gray-600">報價記錄</th>
                   <th className="px-4 py-3 text-center text-base font-semibold text-gray-600">銷貨記錄</th>
                 </tr>
               </thead>
               <tbody>
-                {customers.map((c, i) => (
+                {sorted.map((c, i) => (
                   <tr key={c.id} className="border-b border-gray-100 hover:bg-orange-50 transition-colors">
                     <td className="px-4 py-3">
                       <div className="flex gap-2">

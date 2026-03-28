@@ -23,7 +23,26 @@ export default function QuotationList() {
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState(null)
   const [page, setPage] = useState(1)
+  const [sortKey, setSortKey] = useState("created_at")
+  const [sortDir, setSortDir] = useState("desc")
   const PAGE_SIZE = 20
+
+  const SortTh = ({ field, children, className = "" }) => (
+    <th className={`px-5 py-4 text-left text-base font-semibold text-gray-500 cursor-pointer hover:text-gray-700 select-none ${className}`}
+      onClick={() => { if (sortKey === field) setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortKey(field); setSortDir("asc") } }}>
+      <span className="flex items-center gap-1">{children} {sortKey === field ? (sortDir === "asc" ? "↑" : "↓") : ""}</span>
+    </th>
+  )
+
+  const sorted = [...items].sort((a, b) => {
+    let va = a[sortKey], vb = b[sortKey]
+    if (va == null) va = ""; if (vb == null) vb = ""
+    if (typeof va === "string") va = va.toLowerCase()
+    if (typeof vb === "string") vb = vb.toLowerCase()
+    if (va < vb) return sortDir === "asc" ? -1 : 1
+    if (va > vb) return sortDir === "asc" ? 1 : -1
+    return 0
+  })
 
   const fetchData = async () => {
     setLoading(true)
@@ -105,13 +124,17 @@ export default function QuotationList() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
-                  {["報價單號", "客戶名稱", "報價日期", "有效日期", "狀態", "總金額", "操作"].map(h => (
-                    <th key={h} className="px-5 py-4 text-left text-base font-semibold text-gray-500">{h}</th>
-                  ))}
+                  <SortTh field="quote_no">報價單號</SortTh>
+                  <SortTh field="customer_name">客戶名稱</SortTh>
+                  <SortTh field="quote_date">報價日期</SortTh>
+                  <SortTh field="valid_until">有效日期</SortTh>
+                  <SortTh field="status">狀態</SortTh>
+                  <SortTh field="total">總金額</SortTh>
+                  <th className="px-5 py-4 text-left text-base font-semibold text-gray-500">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(item => (
+                {sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(item => (
                   <tr key={item.id} className="hover:bg-orange-50 transition-colors">
                     <td className="px-5 py-4 text-lg font-mono font-semibold text-orange-600">{item.quote_no}</td>
                     <td className="px-5 py-4 text-lg">{item.customer_name}</td>

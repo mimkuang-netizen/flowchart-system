@@ -18,7 +18,26 @@ export default function PurchaseReturnsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [sortKey, setSortKey] = useState("created_at");
+  const [sortDir, setSortDir] = useState("desc");
   const PAGE_SIZE = 20;
+
+  const SortTh = ({ field, children, className = "" }) => (
+    <th className={`px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider cursor-pointer hover:text-purple-900 select-none ${className}`}
+      onClick={() => { if (sortKey === field) setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortKey(field); setSortDir("asc") } }}>
+      <span className="flex items-center gap-1">{children} {sortKey === field ? (sortDir === "asc" ? "↑" : "↓") : ""}</span>
+    </th>
+  );
+
+  const sorted = [...returns].sort((a, b) => {
+    let va = a[sortKey], vb = b[sortKey];
+    if (va == null) va = ""; if (vb == null) vb = "";
+    if (typeof va === "string") va = va.toLowerCase();
+    if (typeof vb === "string") vb = vb.toLowerCase();
+    if (va < vb) return sortDir === "asc" ? -1 : 1;
+    if (va > vb) return sortDir === "asc" ? 1 : -1;
+    return 0;
+  });
 
   const fetchReturns = async () => {
     setLoading(true);
@@ -131,18 +150,18 @@ export default function PurchaseReturnsPage() {
               <table className="min-w-full divide-y divide-purple-100">
                 <thead className="bg-purple-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">退出單號</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">廠商名稱</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">退出日期</th>
+                    <SortTh field="return_no">退出單號</SortTh>
+                    <SortTh field="vendor_name">廠商名稱</SortTh>
+                    <SortTh field="return_date">退出日期</SortTh>
                     <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">原進貨單號</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">退出原因</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-purple-700 uppercase tracking-wider">狀態</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-purple-700 uppercase tracking-wider">總金額</th>
+                    <SortTh field="status">狀態</SortTh>
+                    <SortTh field="total" className="text-right">總金額</SortTh>
                     <th className="px-6 py-3 text-center text-xs font-medium text-purple-700 uppercase tracking-wider">操作</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-purple-50">
-                  {returns.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((item) => (
+                  {sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((item) => (
                     <tr key={item.id} className="hover:bg-purple-50 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Link href={`/purchase-returns/${item.id}`} className="text-purple-600 hover:text-purple-900 font-medium">

@@ -9,6 +9,25 @@ export default function ReceivingList() {
   const [q, setQ] = useState("")
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState(null)
+  const [sortKey, setSortKey] = useState("created_at")
+  const [sortDir, setSortDir] = useState("desc")
+
+  const SortTh = ({ field, children, className = "" }) => (
+    <th className={`px-5 py-4 text-left text-base font-semibold text-gray-500 cursor-pointer hover:text-gray-700 select-none ${className}`}
+      onClick={() => { if (sortKey === field) setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortKey(field); setSortDir("asc") } }}>
+      <span className="flex items-center gap-1">{children} {sortKey === field ? (sortDir === "asc" ? "↑" : "↓") : ""}</span>
+    </th>
+  )
+
+  const sorted = [...items].sort((a, b) => {
+    let va = a[sortKey], vb = b[sortKey]
+    if (va == null) va = ""; if (vb == null) vb = ""
+    if (typeof va === "string") va = va.toLowerCase()
+    if (typeof vb === "string") vb = vb.toLowerCase()
+    if (va < vb) return sortDir === "asc" ? -1 : 1
+    if (va > vb) return sortDir === "asc" ? 1 : -1
+    return 0
+  })
 
   const fetchData = async () => {
     setLoading(true)
@@ -59,12 +78,18 @@ export default function ReceivingList() {
           : (
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>{["進貨單號", "廠商名稱", "進貨日期", "對應採購單號", "狀態", "總金額", "操作"].map(h => (
-                  <th key={h} className="px-5 py-4 text-left text-base font-semibold text-gray-500">{h}</th>
-                ))}</tr>
+                <tr>
+                  <SortTh field="receipt_no">進貨單號</SortTh>
+                  <SortTh field="vendor_name">廠商名稱</SortTh>
+                  <SortTh field="receipt_date">進貨日期</SortTh>
+                  <th className="px-5 py-4 text-left text-base font-semibold text-gray-500">對應採購單號</th>
+                  <SortTh field="status">狀態</SortTh>
+                  <SortTh field="total">總金額</SortTh>
+                  <th className="px-5 py-4 text-left text-base font-semibold text-gray-500">操作</th>
+                </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {items.map(item => (
+                {sorted.map(item => (
                   <tr key={item.id} className="hover:bg-green-50">
                     <td className="px-5 py-4 text-lg font-mono font-semibold text-green-700">{item.receipt_no}</td>
                     <td className="px-5 py-4 text-lg">{item.vendor_name}</td>

@@ -12,7 +12,26 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const [page, setPage] = useState(1)
+  const [sortKey, setSortKey] = useState("code")
+  const [sortDir, setSortDir] = useState("asc")
   const PAGE_SIZE = 20
+
+  const SortTh = ({ field, children, className = "" }) => (
+    <th className={`px-4 py-3 text-left text-sm font-semibold text-gray-600 cursor-pointer hover:text-gray-800 select-none ${className}`}
+      onClick={() => { if (sortKey === field) setSortDir(d => d === "asc" ? "desc" : "asc"); else { setSortKey(field); setSortDir("asc") } }}>
+      <span className="flex items-center gap-1">{children} {sortKey === field ? (sortDir === "asc" ? "↑" : "↓") : ""}</span>
+    </th>
+  )
+
+  const sorted = [...products].sort((a, b) => {
+    let va = a[sortKey], vb = b[sortKey]
+    if (va == null) va = ""; if (vb == null) vb = ""
+    if (typeof va === "string") va = va.toLowerCase()
+    if (typeof vb === "string") vb = vb.toLowerCase()
+    if (va < vb) return sortDir === "asc" ? -1 : 1
+    if (va > vb) return sortDir === "asc" ? 1 : -1
+    return 0
+  })
 
   const fetchProducts = async (q = "", cat = "") => {
     setLoading(true)
@@ -46,7 +65,7 @@ export default function ProductsPage() {
   }
 
   const totalPages = Math.ceil(products.length / PAGE_SIZE)
-  const paged = products.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const paged = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -117,13 +136,13 @@ export default function ProductsPage() {
                 <tr>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-500 w-20">執行</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-500 w-8">序</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">品號</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">品名</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">單位</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">分類</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">零售價</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">標準進價</th>
-                  <th className="px-4 py-3 text-right text-sm font-semibold text-gray-600">庫存量</th>
+                  <SortTh field="code">品號</SortTh>
+                  <SortTh field="name">品名</SortTh>
+                  <SortTh field="unit">單位</SortTh>
+                  <SortTh field="category">分類</SortTh>
+                  <SortTh field="retail_price" className="text-right">零售價</SortTh>
+                  <SortTh field="cost_price" className="text-right">標準進價</SortTh>
+                  <SortTh field="stock_qty" className="text-right">庫存量</SortTh>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-600">主供應商</th>
                 </tr>
               </thead>
