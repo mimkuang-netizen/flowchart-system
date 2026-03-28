@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, Plus, Pencil, Trash2, Receipt, ChevronLeft, ChevronRight } from "lucide-react"
+import { Search, Plus, Pencil, Trash2, Receipt, ChevronLeft, ChevronRight, ClipboardPaste } from "lucide-react"
 
 const TYPE_COLORS = {
   "進貨": "bg-red-100 text-red-700",
@@ -24,6 +24,10 @@ export default function InvoiceStatisticsPage() {
   const [showForm, setShowForm] = useState(false)
   const [editItem, setEditItem] = useState(null)
   const [form, setForm] = useState({ company_name: "", type: "進貨", invoice_period: "1-2月", invoice_date: "", pretax_amount: "", tax: "", total_amount: "", notes: "" })
+  const [showPaste, setShowPaste] = useState(false)
+  const [pasteText, setPasteText] = useState("")
+  const [pastePreview, setPastePreview] = useState([])
+  const [pasteMsg, setPasteMsg] = useState("")
   const PAGE_SIZE = 20
 
   const SortTh = ({ field, children, className = "" }) => (
@@ -110,6 +114,58 @@ export default function InvoiceStatisticsPage() {
     fetchData()
   }
 
+  // 貼上表格解析
+  const parsePaste = (text) => {
+    const lines = text.trim().split("\n").filter(l => l.trim())
+    const rows = []
+    for (const line of lines) {
+      const cols = line.split("\t")
+      if (cols.length < 5) continue
+      const companyName = cols[0]?.trim()
+      if (!companyName || companyName === "開立公司名稱" || companyName === "Tr") continue
+      const type = cols[1]?.trim() || "進貨"
+      if (type !== "進貨" && type !== "出貨") continue
+      const period = cols[2]?.trim() || ""
+      const dateRaw = cols[3]?.trim() || ""
+      // 處理日期格式 yyyy/m/d 或 yyyy-mm-dd
+      let invoiceDate = ""
+      if (dateRaw && dateRaw !== "yyyy/m/d") {
+        const d = dateRaw.replace(/\//g, "-")
+        const parts = d.split("-")
+        if (parts.length === 3) {
+          invoiceDate = `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].padStart(2, "0")}`
+        }
+      }
+      const pretax = Number(String(cols[4] || "0").replace(/,/g, "")) || 0
+      const tax = Number(String(cols[5] || "0").replace(/,/g, "")) || 0
+      const total = Number(String(cols[6] || "0").replace(/,/g, "")) || 0
+      if (pretax === 0 && tax === 0 && total === 0) continue
+      rows.push({ company_name: companyName, type, invoice_period: period, invoice_date: invoiceDate || null, pretax_amount: pretax, tax, total_amount: total })
+    }
+    return rows
+  }
+
+  const handlePastePreview = () => {
+    const rows = parsePaste(pasteText)
+    setPastePreview(rows)
+    setPasteMsg(rows.length > 0 ? `解析到 ${rows.length} 筆資料` : "未找到有效資料，請確認格式")
+  }
+
+  const handlePasteImport = async () => {
+    if (pastePreview.length === 0) return
+    setPasteMsg("匯入中...")
+    let ok = 0, fail = 0
+    for (const row of pastePreview) {
+      const res = await fetch("/api/invoice-statistics", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(row) })
+      if (res.ok) ok++; else fail++
+    }
+    setPasteMsg(`匯入完成：成功 ${ok} 筆${fail > 0 ? `，失敗 ${fail} 筆` : ""}`)
+    setPastePreview([])
+    setPasteText("")
+    fetchData()
+    setTimeout(() => { setShowPaste(false); setPasteMsg("") }, 2000)
+  }
+
   const formatDate = (d) => d ? new Date(d).toLocaleDateString("zh-TW") : "—"
   const formatMoney = (n) => n != null ? `$${Number(n).toLocaleString()}` : "—"
 
@@ -131,10 +187,16 @@ export default function InvoiceStatisticsPage() {
               <p className="text-base text-gray-400">商品與財務端 / 發票統計明細</p>
             </div>
           </div>
-          <button onClick={openNew}
-            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-500 text-white text-lg font-semibold rounded-xl hover:bg-indigo-600">
-            <Plus size={20} /> 新增發票
-          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={() => { setShowPaste(true); setPasteText(""); setPastePreview([]); setPasteMsg("") }}
+              className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white text-lg font-semibold rounded-xl hover:bg-amber-600">
+              <ClipboardPaste size={18} /> 貼上匯入
+            </button>
+            <button onClick={openNew}
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-500 text-white text-lg font-semibold rounded-xl hover:bg-indigo-600">
+              <Plus size={20} /> 新增發票
+            </button>
+          </div>
         </div>
       </header>
 
@@ -312,6 +374,68 @@ export default function InvoiceStatisticsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 貼上匯入 */}
+      {showPaste && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-3xl w-full shadow-xl max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold mb-2">貼上表格資料匯入</h3>
+            <p className="text-sm text-gray-400 mb-4">
+              從 Google Sheets 複製表格（包含：公司名稱、進貨/出貨、發票月份、發票日期、未稅金額、稅金、含稅總額），直接貼上到下方
+            </p>
+            <textarea
+              value={pasteText}
+              onChange={e => setPasteText(e.target.value)}
+              placeholder={"炎洲\t進貨\t1-2月\t2026/1/2\t1920\t96\t2016\n高菖\t進貨\t1-2月\t2026/1/14\t5625\t281\t5906"}
+              rows={6}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base font-mono focus:outline-none focus:border-amber-400 mb-3"
+            />
+            <button onClick={handlePastePreview}
+              className="px-4 py-2 bg-amber-500 text-white rounded-xl hover:bg-amber-600 font-semibold mb-3">
+              解析資料
+            </button>
+
+            {pasteMsg && <p className="text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-lg mb-3">{pasteMsg}</p>}
+
+            {pastePreview.length > 0 && (
+              <>
+                <div className="overflow-x-auto mb-4">
+                  <table className="w-full text-sm border">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        {["公司名稱", "類型", "月份", "日期", "未稅", "稅金", "含稅"].map(h => (
+                          <th key={h} className="px-3 py-2 text-left font-semibold text-gray-500 border-b">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pastePreview.map((r, i) => (
+                        <tr key={i} className="border-b hover:bg-amber-50/30">
+                          <td className="px-3 py-2 font-semibold">{r.company_name}</td>
+                          <td className="px-3 py-2"><span className={`px-2 py-0.5 rounded-full text-xs ${TYPE_COLORS[r.type]}`}>{r.type}</span></td>
+                          <td className="px-3 py-2 text-gray-500">{r.invoice_period}</td>
+                          <td className="px-3 py-2 text-gray-500">{r.invoice_date || "—"}</td>
+                          <td className="px-3 py-2 text-right">${Number(r.pretax_amount).toLocaleString()}</td>
+                          <td className="px-3 py-2 text-right text-gray-500">${Number(r.tax).toLocaleString()}</td>
+                          <td className="px-3 py-2 text-right font-semibold">${Number(r.total_amount).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <button onClick={handlePasteImport}
+                  className="px-5 py-2.5 bg-green-500 text-white rounded-xl hover:bg-green-600 font-semibold">
+                  確認匯入 {pastePreview.length} 筆
+                </button>
+              </>
+            )}
+
+            <div className="flex justify-end mt-4">
+              <button onClick={() => setShowPaste(false)} className="px-4 py-2 border rounded-xl hover:bg-gray-100">關閉</button>
+            </div>
           </div>
         </div>
       )}
