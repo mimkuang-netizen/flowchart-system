@@ -135,6 +135,14 @@ export const flowSections = [
         active: true,
       },
       {
+        id: "invoice-statistics",
+        label: "發票統計明細",
+        icon: "Receipt",
+        href: "/invoice-statistics",
+        description: "進出貨發票統計明細",
+        active: true,
+      },
+      {
         id: "invoice-helper",
         label: "電子發票助手",
         icon: "FileCheck",
