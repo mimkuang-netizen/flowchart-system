@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, Plus, Pencil, Trash2, ShoppingCart, ChevronLeft, Printer } from "lucide-react"
+import { Search, Plus, Pencil, Trash2, ShoppingCart, ChevronLeft, Printer, RefreshCw } from "lucide-react"
 
 const STATUS_MAP = {
   draft:     { label: "草稿",   color: "bg-gray-100 text-gray-600" },
@@ -20,6 +20,8 @@ export default function SalesList() {
   const [page, setPage] = useState(1)
   const [sortKey, setSortKey] = useState("created_at")
   const [sortDir, setSortDir] = useState("desc")
+  const [syncing, setSyncing] = useState(false)
+  const [syncMsg, setSyncMsg] = useState("")
   const PAGE_SIZE = 20
 
   const SortTh = ({ field, children, className = "" }) => (
@@ -58,6 +60,18 @@ export default function SalesList() {
     fetchData()
   }
 
+  const handleSync = async () => {
+    setSyncing(true); setSyncMsg("")
+    try {
+      const res = await fetch("/api/easystore/sync", { method: "POST" })
+      const data = await res.json()
+      setSyncMsg(data.message || data.error || "同步完成")
+      if (!data.error) fetchData()
+    } catch { setSyncMsg("同步失敗") }
+    setSyncing(false)
+    setTimeout(() => setSyncMsg(""), 5000)
+  }
+
   const formatDate = (d) => d ? new Date(d).toLocaleDateString("zh-TW") : "—"
   const formatMoney = (n) => n != null ? `$${Number(n).toLocaleString()}` : "—"
 
@@ -75,12 +89,20 @@ export default function SalesList() {
               <p className="text-base text-gray-400">客戶端 / 銷貨作業</p>
             </div>
           </div>
-          <Link href="/sales/new"
-            className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white text-lg font-semibold rounded-xl hover:bg-orange-600">
-            <Plus size={20} /> 新增銷貨單
-          </Link>
+          <div className="flex items-center gap-3">
+            <button onClick={handleSync} disabled={syncing}
+              className="flex items-center gap-2 px-4 py-2.5 bg-green-500 text-white text-lg font-semibold rounded-xl hover:bg-green-600 disabled:opacity-50">
+              <RefreshCw size={18} className={syncing ? "animate-spin" : ""} /> {syncing ? "同步中..." : "同步 EasyStore"}
+            </button>
+            <Link href="/sales/new"
+              className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white text-lg font-semibold rounded-xl hover:bg-orange-600">
+              <Plus size={20} /> 新增銷貨單
+            </Link>
+          </div>
         </div>
       </header>
+
+      {syncMsg && <div className="max-w-7xl mx-auto px-6 pt-4"><div className="px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-base">{syncMsg}</div></div>}
 
       <main className="max-w-7xl mx-auto px-6 py-6 space-y-5">
         <div className="flex flex-wrap gap-3">
