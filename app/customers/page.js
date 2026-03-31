@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, Plus, Pencil, Trash2, Users, ChevronLeft, Tag, X } from "lucide-react"
+import { Search, Plus, Pencil, Trash2, Users, ChevronLeft, Tag, X, Download, FileSpreadsheet } from "lucide-react"
+import { exportToExcel } from "@/lib/exportExcel"
 
 const PRESET_COLORS = [
   "#f97316", "#ef4444", "#22c55e", "#3b82f6",
@@ -215,6 +216,20 @@ export default function CustomersPage() {
           </div>
           <div className="flex gap-3">
             <button
+              onClick={() => exportToExcel(sorted, [
+                { header: "客戶代號", key: "code" },
+                { header: "客戶簡稱", key: "short_name" },
+                { header: "公司全名", key: "full_name" },
+                { header: "電話", key: "phone" },
+                { header: "傳真", key: "fax" },
+                { header: "聯絡人", key: "contact" },
+                { header: "手機", key: "mobile" },
+              ], "客戶資料")}
+              className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-base font-semibold rounded-xl hover:bg-gray-50"
+            >
+              <Download size={18} /> 匯出 Excel
+            </button>
+            <button
               onClick={() => setShowTagManager(true)}
               className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-base font-semibold rounded-xl hover:bg-gray-50 transition-colors"
             >
@@ -298,7 +313,7 @@ export default function CustomersPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left text-base font-semibold text-gray-500 w-20">執行</th>
+                  <th className="px-4 py-3 text-left text-base font-semibold text-gray-500 w-28">執行</th>
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-500 w-10">序</th>
                   <SortTh field="code">客戶代號</SortTh>
                   <SortTh field="short_name">客戶簡稱</SortTh>
@@ -327,6 +342,13 @@ export default function CustomersPage() {
                         >
                           <Trash2 size={14} />
                         </button>
+                        <Link
+                          href={`/customers/${c.id}/statement`}
+                          className="w-8 h-8 flex items-center justify-center bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+                          title="對帳單"
+                        >
+                          <FileSpreadsheet size={14} />
+                        </Link>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-base text-gray-500">{i + 1}</td>

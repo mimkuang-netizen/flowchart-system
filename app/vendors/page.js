@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, Plus, Pencil, Trash2, Truck, ChevronLeft } from "lucide-react"
+import { Search, Plus, Pencil, Trash2, Truck, ChevronLeft, Download } from "lucide-react"
+import { exportToExcel } from "@/lib/exportExcel"
 
 export default function VendorsPage() {
   const [vendors, setVendors] = useState([])
@@ -62,6 +63,18 @@ export default function VendorsPage() {
             </div>
           </div>
           <div className="flex gap-3">
+            <button
+              onClick={() => exportToExcel(sorted, [
+                { header: "廠商代號", key: "code" },
+                { header: "廠商簡稱", key: "short_name" },
+                { header: "電話", key: "phone" },
+                { header: "聯絡人", key: "contact" },
+                { header: "手機", key: "mobile" },
+              ], "廠商資料")}
+              className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-base font-semibold rounded-xl hover:bg-gray-50"
+            >
+              <Download size={18} /> 匯出 Excel
+            </button>
             <Link href="/vendors/new"
               className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white text-lg font-semibold rounded-xl hover:bg-green-700 shadow-sm">
               <Plus size={20} />新增廠商

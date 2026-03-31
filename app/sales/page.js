@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, Plus, Pencil, Trash2, ShoppingCart, ChevronLeft, Printer, RefreshCw } from "lucide-react"
+import { Search, Plus, Pencil, Trash2, ShoppingCart, ChevronLeft, Printer, RefreshCw, Download } from "lucide-react"
+import { exportToExcel } from "@/lib/exportExcel"
 
 const STATUS_MAP = {
   draft:     { label: "草稿",   color: "bg-gray-100 text-gray-600" },
@@ -22,6 +23,7 @@ export default function SalesList() {
   const [sortDir, setSortDir] = useState("desc")
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState("")
+  const [selected, setSelected] = useState(new Set())
   const PAGE_SIZE = 20
 
   const SortTh = ({ field, children, className = "" }) => (
@@ -72,6 +74,18 @@ export default function SalesList() {
     setTimeout(() => setSyncMsg(""), 5000)
   }
 
+  const toggleSelect = (id) => setSelected(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
+  const toggleAll = () => {
+    const pageIds = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(i => i.id)
+    const allSelected = pageIds.every(id => selected.has(id))
+    setSelected(prev => { const s = new Set(prev); pageIds.forEach(id => allSelected ? s.delete(id) : s.add(id)); return s })
+  }
+  const handleBatchPrint = () => {
+    if (selected.size === 0) return
+    const ids = [...selected].join(",")
+    window.open(`/sales/batch-print?ids=${ids}`, "_blank")
+  }
+
   const formatDate = (d) => d ? new Date(d).toLocaleDateString("zh-TW") : "—"
   const formatMoney = (n) => n != null ? `$${Number(n).toLocaleString()}` : "—"
 
@@ -90,6 +104,18 @@ export default function SalesList() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => exportToExcel(items, [
+                { header: "銷貨單號", key: "order_no" },
+                { header: "客戶名稱", key: "customer_name" },
+                { header: "銷貨日期", key: "order_date", format: "date" },
+                { header: "狀態", key: "status" },
+                { header: "總金額", key: "total", format: "money" },
+              ], "銷貨單")}
+              className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-base font-semibold rounded-xl hover:bg-gray-50"
+            >
+              <Download size={18} /> 匯出 Excel
+            </button>
             <button onClick={handleSync} disabled={syncing}
               className="flex items-center gap-2 px-4 py-2.5 bg-green-500 text-white text-lg font-semibold rounded-xl hover:bg-green-600 disabled:opacity-50">
               <RefreshCw size={18} className={syncing ? "animate-spin" : ""} /> {syncing ? "同步中..." : "同步 EasyStore"}
@@ -102,6 +128,17 @@ export default function SalesList() {
         </div>
       </header>
 
+      {selected.size > 0 && (
+        <div className="max-w-7xl mx-auto px-6 pt-4">
+          <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl">
+            <span className="text-blue-700 font-semibold">已選 {selected.size} 筆</span>
+            <button onClick={handleBatchPrint} className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">
+              <Printer size={14} /> 批次列印
+            </button>
+            <button onClick={() => setSelected(new Set())} className="text-sm text-gray-500 hover:text-gray-700">清除選取</button>
+          </div>
+        </div>
+      )}
       {syncMsg && <div className="max-w-7xl mx-auto px-6 pt-4"><div className="px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-base">{syncMsg}</div></div>}
 
       <main className="max-w-7xl mx-auto px-6 py-6 space-y-5">
@@ -125,6 +162,7 @@ export default function SalesList() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-100">
                 <tr>
+                  <th className="px-3 py-4 w-10"><input type="checkbox" onChange={toggleAll} className="w-4 h-4 accent-orange-500" /></th>
                   <SortTh field="order_no">銷貨單號</SortTh>
                   <SortTh field="customer_name">客戶名稱</SortTh>
                   <SortTh field="order_date">銷貨日期</SortTh>
@@ -136,6 +174,7 @@ export default function SalesList() {
               <tbody className="divide-y divide-gray-50">
                 {sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(item => (
                   <tr key={item.id} className="hover:bg-orange-50 transition-colors">
+                    <td className="px-3 py-4"><input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} className="w-4 h-4 accent-orange-500" /></td>
                     <td className="px-5 py-4 text-lg font-mono font-semibold text-orange-600">{item.order_no}</td>
                     <td className="px-5 py-4 text-lg">{item.customer_name}</td>
                     <td className="px-5 py-4 text-base text-gray-500">{formatDate(item.order_date)}</td>

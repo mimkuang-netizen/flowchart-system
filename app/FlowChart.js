@@ -128,6 +128,21 @@ export default function FlowChart() {
         </div>
       </header>
 
+      {/* 儀表板快捷入口 */}
+      <div className="max-w-7xl mx-auto px-6 pt-6">
+        <Link href="/dashboard"
+          className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-2xl shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5">
+          <div className="flex items-center gap-3">
+            <Icons.LayoutDashboard size={24} />
+            <div>
+              <p className="text-lg font-bold">營運儀表板</p>
+              <p className="text-sm opacity-80">本月營業額、待處理訂單、庫存警示</p>
+            </div>
+          </div>
+          <Icons.ArrowRight size={22} />
+        </Link>
+      </div>
+
       {/* 主內容 */}
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
         {flowSections.map((section) => {

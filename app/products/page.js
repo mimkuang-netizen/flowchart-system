@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, Plus, Pencil, Trash2, Package, ChevronLeft, Filter } from "lucide-react"
+import { Search, Plus, Pencil, Trash2, Package, ChevronLeft, Filter, Download } from "lucide-react"
+import { exportToExcel } from "@/lib/exportExcel"
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([])
@@ -83,12 +84,28 @@ export default function ProductsPage() {
               <p className="text-base text-gray-400">共 {products.length} 筆商品</p>
             </div>
           </div>
-          <Link
-            href="/products/new"
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-lg font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
-          >
-            <Plus size={20} />新增商品
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => exportToExcel(sorted, [
+                { header: "品號", key: "code" },
+                { header: "品名", key: "name" },
+                { header: "單位", key: "unit" },
+                { header: "分類", key: "category" },
+                { header: "零售價", key: "retail_price", format: "money" },
+                { header: "標準進價", key: "cost_price", format: "money" },
+                { header: "庫存量", key: "stock_qty" },
+              ], "商品資料")}
+              className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-base font-semibold rounded-xl hover:bg-gray-50"
+            >
+              <Download size={18} /> 匯出 Excel
+            </button>
+            <Link
+              href="/products/new"
+              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white text-lg font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+            >
+              <Plus size={20} />新增商品
+            </Link>
+          </div>
         </div>
       </header>
 

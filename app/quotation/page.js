@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, Plus, Pencil, Trash2, FileText, ChevronLeft, Printer } from "lucide-react"
+import { Search, Plus, Pencil, Trash2, FileText, ChevronLeft, Printer, Download } from "lucide-react"
+import { exportToExcel } from "@/lib/exportExcel"
 
 const STATUS_MAP = {
   draft:    { label: "草稿",   color: "bg-gray-100 text-gray-600" },
@@ -82,13 +83,28 @@ export default function QuotationList() {
               <p className="text-base text-gray-400">客戶端 / 報價作業</p>
             </div>
           </div>
-          <Link
-            href="/quotation/new"
-            className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white text-lg font-semibold rounded-xl hover:bg-orange-600 transition-colors"
-          >
-            <Plus size={20} />
-            新增報價單
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => exportToExcel(items, [
+                { header: "報價單號", key: "quote_no" },
+                { header: "客戶名稱", key: "customer_name" },
+                { header: "報價日期", key: "quote_date", format: "date" },
+                { header: "有效日期", key: "valid_until", format: "date" },
+                { header: "狀態", key: "status" },
+                { header: "總金額", key: "total", format: "money" },
+              ], "報價單")}
+              className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-base font-semibold rounded-xl hover:bg-gray-50"
+            >
+              <Download size={18} /> 匯出 Excel
+            </button>
+            <Link
+              href="/quotation/new"
+              className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white text-lg font-semibold rounded-xl hover:bg-orange-600 transition-colors"
+            >
+              <Plus size={20} />
+              新增報價單
+            </Link>
+          </div>
         </div>
       </header>
 

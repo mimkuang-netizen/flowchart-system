@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, Plus, Pencil, Trash2, Receipt, ChevronLeft, ChevronRight, ClipboardPaste } from "lucide-react"
+import { Search, Plus, Pencil, Trash2, Receipt, ChevronLeft, ChevronRight, ClipboardPaste, Download } from "lucide-react"
+import { exportToExcel } from "@/lib/exportExcel"
 
 const TYPE_COLORS = {
   "進貨": "bg-red-100 text-red-700",
@@ -188,6 +189,20 @@ export default function InvoiceStatisticsPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => exportToExcel(items, [
+                { header: "公司名稱", key: "company_name" },
+                { header: "進/出貨", key: "type" },
+                { header: "發票月份", key: "invoice_period" },
+                { header: "發票日期", key: "invoice_date", format: "date" },
+                { header: "未稅金額", key: "pretax_amount", format: "money" },
+                { header: "稅金", key: "tax", format: "money" },
+                { header: "含稅總額", key: "total_amount", format: "money" },
+              ], "發票統計")}
+              className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-base font-semibold rounded-xl hover:bg-gray-50"
+            >
+              <Download size={18} /> 匯出 Excel
+            </button>
             <button onClick={() => { setShowPaste(true); setPasteText(""); setPastePreview([]); setPasteMsg("") }}
               className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white text-lg font-semibold rounded-xl hover:bg-amber-600">
               <ClipboardPaste size={18} /> 貼上匯入
