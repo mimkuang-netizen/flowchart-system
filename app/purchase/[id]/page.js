@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, Save, ClipboardList, Plus, Trash2, Search } from "lucide-react"
+import { ChevronLeft, Save, ClipboardList, Plus, Trash2, Search, ArrowRightCircle } from "lucide-react"
 
 const TAX_TYPES = [{ value: "taxed", label: "含稅（外加5%）" }, { value: "included", label: "含稅（內含）" }, { value: "tax_free", label: "免稅" }]
 const STATUS_OPTS = [{ value: "draft", label: "草稿" }, { value: "confirmed", label: "已確認" }, { value: "received", label: "已到貨" }, { value: "cancelled", label: "已取消" }]
@@ -95,6 +95,17 @@ export default function PurchaseForm() {
     router.push("/purchase")
   }
 
+  const [converting, setConverting] = useState(false)
+  const handleConvert = async () => {
+    if (!confirm("確定要將此採購單轉為進貨單嗎？")) return
+    setConverting(true)
+    const res = await fetch(`/api/purchase/${id}/convert`, { method: "POST" })
+    const data = await res.json()
+    setConverting(false)
+    if (res.ok) { alert(data.message); router.push(`/receiving/${data.receiving_id}`) }
+    else { setError(data.error || "轉單失敗") }
+  }
+
   const filteredVendors = vendors.filter(v => v.short_name?.includes(vendorQ) || v.code?.includes(vendorQ)).slice(0, 8)
   const filteredProducts = products.filter(p => p.name?.includes(productSearch) || p.code?.includes(productSearch)).slice(0, 10)
   const inputCls = "w-full px-3 py-2 text-lg border border-gray-300 rounded-xl focus:outline-none focus:border-green-500"
@@ -114,6 +125,12 @@ export default function PurchaseForm() {
             </div>
           </div>
           <div className="flex gap-3">
+            {!isNew && (
+              <button onClick={handleConvert} disabled={converting}
+                className="flex items-center gap-2 px-4 py-2.5 bg-teal-500 text-white text-lg font-semibold rounded-xl hover:bg-teal-600 disabled:opacity-50">
+                <ArrowRightCircle size={18} /> {converting ? "轉換中..." : "轉進貨單"}
+              </button>
+            )}
             <Link href="/purchase" className="px-5 py-2.5 border-2 border-gray-200 text-lg rounded-xl hover:bg-gray-50">取消</Link>
             <button onClick={handleSave} disabled={saving}
               className="flex items-center gap-2 px-6 py-2.5 bg-green-600 text-white text-lg font-semibold rounded-xl hover:bg-green-700 disabled:opacity-50">

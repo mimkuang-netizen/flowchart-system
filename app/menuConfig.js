@@ -150,6 +150,14 @@ export const flowSections = [
         description: "電子發票查詢與管理",
         active: true,
       },
+      {
+        id: "audit-log",
+        label: "操作日誌",
+        icon: "History",
+        href: "/audit-log",
+        description: "系統操作記錄查詢",
+        active: true,
+      },
     ],
   },
 ];

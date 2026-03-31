@@ -16,6 +16,10 @@ export async function PUT(request, { params }) {
   delete header.id; delete header.created_at; delete header.sales_order_items
   header.created_at = new Date().toISOString()
 
+  // Fetch current order status BEFORE updating (for stock adjustment "only once" check)
+  const { data: currentOrder } = await supabase.from('sales_orders').select('status').eq('id', id).single()
+  const oldStatus = currentOrder?.status
+
   const { data, error } = await supabase.from('sales_orders').update(header).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -25,6 +29,24 @@ export async function PUT(request, { params }) {
     const { error: e } = await supabase.from('sales_order_items').insert(rows)
     if (e) return NextResponse.json({ error: e.message }, { status: 500 })
   }
+
+  // Stock adjustment: decrease stock when status changes to completed/shipped (only once)
+  const newStatus = header.status
+  const stockTriggerStatuses = ['completed', 'shipped']
+  if (stockTriggerStatuses.includes(newStatus) && !stockTriggerStatuses.includes(oldStatus)) {
+    const { data: orderItems } = await supabase.from('sales_order_items').select('*').eq('order_id', id)
+    if (orderItems) {
+      for (const item of orderItems) {
+        if (!item.product_code) continue
+        const { data: product } = await supabase.from('products').select('id, stock_qty').eq('code', item.product_code).single()
+        if (product) {
+          await supabase.from('products').update({ stock_qty: product.stock_qty - item.quantity }).eq('id', product.id)
+          console.log('Stock adjusted:', item.product_code, -item.quantity)
+        }
+      }
+    }
+  }
+
   return NextResponse.json(data)
 }
 

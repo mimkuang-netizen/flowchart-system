@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, Save, FileText, Plus, Trash2, Search, X, Building2 } from "lucide-react"
+import { ChevronLeft, Save, FileText, Plus, Trash2, Search, X, Building2, ArrowRightCircle } from "lucide-react"
 
 const TAX_TYPES = [
   { value: "taxed", label: "含稅（外加5%）" },
@@ -241,6 +241,21 @@ export default function QuotationForm() {
     router.push("/quotation")
   }
 
+  const [converting, setConverting] = useState(false)
+  const handleConvert = async () => {
+    if (!confirm("確定要將此報價單轉為銷貨單嗎？")) return
+    setConverting(true)
+    const res = await fetch(`/api/quotation/${id}/convert`, { method: "POST" })
+    const data = await res.json()
+    setConverting(false)
+    if (res.ok) {
+      alert(`${data.message}`)
+      router.push(`/sales/${data.sales_order_id}`)
+    } else {
+      setError(data.error || "轉單失敗")
+    }
+  }
+
   const filteredCustomers = customers.filter(c => {
     const q = customerQ.toLowerCase()
     return c.short_name?.toLowerCase().includes(q) || c.code?.toLowerCase().includes(q)
@@ -269,6 +284,12 @@ export default function QuotationForm() {
             </div>
           </div>
           <div className="flex gap-3">
+            {!isNew && (
+              <button onClick={handleConvert} disabled={converting}
+                className="flex items-center gap-2 px-4 py-2.5 bg-green-500 text-white text-lg font-semibold rounded-xl hover:bg-green-600 disabled:opacity-50">
+                <ArrowRightCircle size={18} /> {converting ? "轉換中..." : "轉銷貨單"}
+              </button>
+            )}
             <Link href="/quotation" className="px-5 py-2.5 border-2 border-gray-200 text-lg rounded-xl hover:bg-gray-50">取消</Link>
             <button onClick={handleSave} disabled={saving}
               className="flex items-center gap-2 px-6 py-2.5 bg-orange-500 text-white text-lg font-semibold rounded-xl hover:bg-orange-600 disabled:opacity-50">
