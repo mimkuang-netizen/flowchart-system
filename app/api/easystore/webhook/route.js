@@ -48,7 +48,7 @@ export async function POST(request) {
         customer_name: customerName,
         order_date: orderDate,
         status: 'confirmed',
-        tax_type: tax > 0 ? 'taxed' : 'exempt',
+        tax_type: tax > 0 ? 'taxed' : 'tax_free',
         subtotal,
         tax_amount: tax,
         total,

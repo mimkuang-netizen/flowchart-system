@@ -14,7 +14,7 @@ const STATUS_OPTS = [
 const TAX_TYPES = [
   { value: "taxed", label: "含稅（外加5%）" },
   { value: "included", label: "含稅（內含5%）" },
-  { value: "exempt", label: "免稅" },
+  { value: "tax_free", label: "免稅" },
 ]
 
 const EMPTY_ITEM = { product_code: "", product_name: "", unit: "", quantity: 1, unit_price: 0, discount: 100, amount: 0, remark: "" }
