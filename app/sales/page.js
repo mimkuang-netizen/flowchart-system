@@ -217,7 +217,7 @@ export default function SalesList() {
                         <Link href={`/sales/${item.id}`} className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg">
                           <Pencil size={18} />
                         </Link>
-                        <Link href={`/sales/${item.id}/print`} className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg">
+                        <Link href={`/sales/${item.id}/print`} target="_blank" className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg">
                           <Printer size={18} />
                         </Link>
                         <button onClick={() => setDeleteId(item.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg">

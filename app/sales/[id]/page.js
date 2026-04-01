@@ -392,7 +392,7 @@ export default function SalesForm() {
 
         <div className="flex justify-between pb-8">
           {!isNew && (
-            <Link href={`/sales/${id}/print`} className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white text-lg font-semibold rounded-xl hover:bg-blue-600">
+            <Link href={`/sales/${id}/print`} target="_blank" className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white text-lg font-semibold rounded-xl hover:bg-blue-600">
               <Printer size={18} /> 列印銷貨單
             </Link>
           )}
