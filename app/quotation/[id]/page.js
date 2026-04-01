@@ -375,12 +375,12 @@ export default function QuotationForm() {
               <thead>
                 <tr className="bg-gray-50 text-gray-500 text-sm">
                   <th className="px-2 py-2.5 text-center w-10">#</th>
-                  <th className="px-2 py-2.5 text-left w-28">品號</th>
-                  <th className="px-2 py-2.5 text-left" style={{ minWidth: 200 }}>品名</th>
-                  <th className="px-2 py-2.5 text-center w-16">單位</th>
-                  <th className="px-2 py-2.5 text-right w-24">數量</th>
-                  <th className="px-2 py-2.5 text-right w-32">單價</th>
-                  <th className="px-2 py-2.5 text-right w-20">折扣%</th>
+                  <th className="px-2 py-2.5 text-left w-40">品號</th>
+                  <th className="px-2 py-2.5 text-left" style={{ minWidth: 240 }}>品名</th>
+                  <th className="px-2 py-2.5 text-center w-20">單位</th>
+                  <th className="px-2 py-2.5 text-right w-28">數量</th>
+                  <th className="px-2 py-2.5 text-right w-36">單價</th>
+                  <th className="px-2 py-2.5 text-right w-24">折扣%</th>
                   <th className="px-2 py-2.5 text-right w-36">金額</th>
                   <th className="px-2 py-2.5 text-left" style={{ minWidth: 120 }}>備註</th>
                   <th className="px-2 py-2.5 w-10"></th>

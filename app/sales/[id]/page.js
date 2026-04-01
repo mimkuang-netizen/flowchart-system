@@ -267,7 +267,7 @@ export default function SalesForm() {
                 {items.map((item, idx) => (
                   <tr key={idx} className="hover:bg-orange-50/30">
                     <td className="px-3 py-2 text-gray-400">{idx + 1}</td>
-                    <td className="px-3 py-2 w-32">
+                    <td className="px-3 py-2 w-40">
                       <div className="relative">
                         <input value={item.product_code}
                           onChange={e => updateItem(idx, "product_code", e.target.value)}
@@ -298,27 +298,27 @@ export default function SalesForm() {
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2 min-w-40">
+                    <td className="px-3 py-2 min-w-52">
                       <input value={item.product_name} onChange={e => updateItem(idx, "product_name", e.target.value)}
                         className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:border-orange-400" placeholder="品名" />
                     </td>
-                    <td className="px-3 py-2 w-16">
+                    <td className="px-3 py-2 w-20">
                       <input value={item.unit} onChange={e => updateItem(idx, "unit", e.target.value)}
                         className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none" />
                     </td>
-                    <td className="px-3 py-2 w-24">
+                    <td className="px-3 py-2 w-28">
                       <input type="number" min={0} value={item.quantity} onChange={e => updateItem(idx, "quantity", e.target.value)}
                         className="w-full px-2 py-1.5 text-right border border-gray-200 rounded-lg focus:outline-none" />
                     </td>
-                    <td className="px-3 py-2 w-28">
+                    <td className="px-3 py-2 w-32">
                       <input type="number" min={0} value={item.unit_price} onChange={e => updateItem(idx, "unit_price", e.target.value)}
                         className="w-full px-2 py-1.5 text-right border border-gray-200 rounded-lg focus:outline-none" />
                     </td>
-                    <td className="px-3 py-2 w-20">
+                    <td className="px-3 py-2 w-24">
                       <input type="number" min={0} max={100} value={item.discount} onChange={e => updateItem(idx, "discount", e.target.value)}
                         className="w-full px-2 py-1.5 text-right border border-gray-200 rounded-lg focus:outline-none" />
                     </td>
-                    <td className="px-3 py-2 w-28 text-right font-semibold">${Number(item.amount).toLocaleString()}</td>
+                    <td className="px-3 py-2 w-32 text-right font-semibold">${Number(item.amount).toLocaleString()}</td>
                     <td className="px-3 py-2">
                       <button onClick={() => removeItem(idx)} className="text-gray-300 hover:text-red-400"><Trash2 size={16} /></button>
                     </td>
