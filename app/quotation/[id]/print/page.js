@@ -3,8 +3,6 @@
 import { useEffect, useState } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import { Printer, Download, Link2, Check } from "lucide-react"
-import html2canvas from "html2canvas"
-import { jsPDF } from "jspdf"
 
 export default function QuotationPrint() {
   const { id } = useParams()
@@ -26,8 +24,12 @@ export default function QuotationPrint() {
   const handleDownloadPDF = async () => {
     setDownloading(true)
     try {
+      const html2canvasMod = await import("html2canvas")
+      const html2canvasFn = html2canvasMod.default
+      const jspdfMod = await import("jspdf")
+      const { jsPDF } = jspdfMod
       const el = document.getElementById("print-content")
-      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
+      const canvas = await html2canvasFn(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
       const imgData = canvas.toDataURL("image/png")
       const pdf = new jsPDF("p", "mm", "a4")
       const pdfW = pdf.internal.pageSize.getWidth()
@@ -37,7 +39,7 @@ export default function QuotationPrint() {
       pdf.save(fileName)
     } catch (e) {
       console.error("PDF download failed:", e)
-      alert("PDF 下載失敗，請改用列印功能")
+      alert("PDF 下載失敗：" + e.message)
     }
     setDownloading(false)
   }
