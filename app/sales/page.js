@@ -16,6 +16,7 @@ export default function SalesList() {
   const [items, setItems] = useState([])
   const [q, setQ] = useState("")
   const [status, setStatus] = useState("")
+  const [dateFilter, setDateFilter] = useState("")
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState(null)
   const [page, setPage] = useState(1)
@@ -33,7 +34,26 @@ export default function SalesList() {
     </th>
   )
 
-  const sorted = [...items].sort((a, b) => {
+  const getDateRange = (filter) => {
+    const now = new Date()
+    const y = now.getFullYear(), m = now.getMonth()
+    switch (filter) {
+      case "thisMonth": return { start: new Date(y, m, 1), end: new Date(y, m + 1, 0) }
+      case "lastMonth": return { start: new Date(y, m - 1, 1), end: new Date(y, m, 0) }
+      case "thisYear": return { start: new Date(y, 0, 1), end: new Date(y, 11, 31) }
+      case "lastYear": return { start: new Date(y - 1, 0, 1), end: new Date(y - 1, 11, 31) }
+      default: return null
+    }
+  }
+
+  const dateFiltered = dateFilter ? items.filter(item => {
+    const range = getDateRange(dateFilter)
+    if (!range || !item.order_date) return true
+    const d = new Date(item.order_date)
+    return d >= range.start && d <= range.end
+  }) : items
+
+  const sorted = [...dateFiltered].sort((a, b) => {
     let va = a[sortKey], vb = b[sortKey]
     if (va == null) va = ""; if (vb == null) vb = ""
     if (typeof va === "string") va = va.toLowerCase()
@@ -152,6 +172,14 @@ export default function SalesList() {
             className="px-4 py-2.5 text-lg border border-gray-300 rounded-xl bg-white focus:outline-none focus:border-orange-400">
             <option value="">全部狀態</option>
             {Object.entries(STATUS_MAP).map(([v, { label }]) => <option key={v} value={v}>{label}</option>)}
+          </select>
+          <select value={dateFilter} onChange={e => { setDateFilter(e.target.value); setPage(1) }}
+            className="px-4 py-2.5 text-lg border border-gray-300 rounded-xl bg-white focus:outline-none focus:border-orange-400">
+            <option value="">全部時間</option>
+            <option value="thisMonth">當月</option>
+            <option value="lastMonth">上個月</option>
+            <option value="thisYear">今年</option>
+            <option value="lastYear">去年</option>
           </select>
         </div>
 

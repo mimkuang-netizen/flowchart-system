@@ -7,6 +7,7 @@ import { Search, Plus, Pencil, Trash2, PackageCheck, ChevronLeft } from "lucide-
 export default function ReceivingList() {
   const [items, setItems] = useState([])
   const [q, setQ] = useState("")
+  const [dateFilter, setDateFilter] = useState("")
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState(null)
   const [sortKey, setSortKey] = useState("created_at")
@@ -19,7 +20,26 @@ export default function ReceivingList() {
     </th>
   )
 
-  const sorted = [...items].sort((a, b) => {
+  const getDateRange = (filter) => {
+    const now = new Date()
+    const y = now.getFullYear(), m = now.getMonth()
+    switch (filter) {
+      case "thisMonth": return { start: new Date(y, m, 1), end: new Date(y, m + 1, 0) }
+      case "lastMonth": return { start: new Date(y, m - 1, 1), end: new Date(y, m, 0) }
+      case "thisYear": return { start: new Date(y, 0, 1), end: new Date(y, 11, 31) }
+      case "lastYear": return { start: new Date(y - 1, 0, 1), end: new Date(y - 1, 11, 31) }
+      default: return null
+    }
+  }
+
+  const dateFiltered = dateFilter ? items.filter(item => {
+    const range = getDateRange(dateFilter)
+    if (!range || !item.receipt_date) return true
+    const d = new Date(item.receipt_date)
+    return d >= range.start && d <= range.end
+  }) : items
+
+  const sorted = [...dateFiltered].sort((a, b) => {
     let va = a[sortKey], vb = b[sortKey]
     if (va == null) va = ""; if (vb == null) vb = ""
     if (typeof va === "string") va = va.toLowerCase()
@@ -67,10 +87,20 @@ export default function ReceivingList() {
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-6 py-6 space-y-5">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-          <input value={q} onChange={e => setQ(e.target.value)} placeholder="搜尋單號、廠商名稱..."
-            className="w-full pl-10 pr-4 py-2.5 text-lg border border-gray-300 rounded-xl focus:outline-none focus:border-green-500 bg-white" />
+        <div className="flex flex-wrap gap-3">
+          <div className="relative flex-1 min-w-60">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+            <input value={q} onChange={e => setQ(e.target.value)} placeholder="搜尋單號、廠商名稱..."
+              className="w-full pl-10 pr-4 py-2.5 text-lg border border-gray-300 rounded-xl focus:outline-none focus:border-green-500 bg-white" />
+          </div>
+          <select value={dateFilter} onChange={e => setDateFilter(e.target.value)}
+            className="px-4 py-2.5 text-lg border border-gray-300 rounded-xl bg-white focus:outline-none focus:border-green-400">
+            <option value="">全部時間</option>
+            <option value="thisMonth">當月</option>
+            <option value="lastMonth">上個月</option>
+            <option value="thisYear">今年</option>
+            <option value="lastYear">去年</option>
+          </select>
         </div>
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           {loading ? <div className="py-20 text-center text-xl text-gray-400">載入中...</div>
