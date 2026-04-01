@@ -135,8 +135,14 @@ export default function SalesForm() {
     router.push("/sales")
   }
 
-  const filteredCustomers = customers.filter(c => c.short_name?.includes(customerQ) || c.code?.includes(customerQ)).slice(0, 8)
-  const filteredProducts = products.filter(p => p.name?.includes(productSearch) || p.code?.includes(productSearch)).slice(0, 10)
+  const filteredCustomers = customers.filter(c => {
+    const q = customerQ.toLowerCase()
+    return c.short_name?.toLowerCase().includes(q) || c.code?.toLowerCase().includes(q)
+  }).slice(0, 8)
+  const filteredProducts = products.filter(p => {
+    const s = productSearch.toLowerCase()
+    return p.name?.toLowerCase().includes(s) || p.code?.toLowerCase().includes(s)
+  }).slice(0, 10)
   const inputCls = "w-full px-3 py-2 text-lg border border-gray-300 rounded-xl focus:outline-none focus:border-orange-400"
 
   if (loading) return <div className="min-h-screen bg-gray-100 flex items-center justify-center text-xl text-gray-400">載入中...</div>

@@ -22,6 +22,19 @@ const EMPTY_FORM = {
   notes: "",
 }
 
+const QUICK_PRESETS = {
+  expense: [
+    { label: "🍱 午餐", category: "餐費", description: "午餐", amount: "", payment_method: "cash" },
+    { label: "🚗 車輛維護", category: "交通費", description: "車輛維護", amount: "", payment_method: "cash" },
+    { label: "📦 進貨費用", category: "材料費", description: "進貨費用", amount: "", payment_method: "transfer" },
+    { label: "🧾 稅金支付", category: "其他", description: "稅金支付", amount: "", payment_method: "transfer" },
+  ],
+  income: [
+    { label: "💰 貨款", category: "銷貨收入", description: "客戶貨款", amount: "", payment_method: "transfer" },
+    { label: "💵 現金收款", category: "銷貨收入", description: "現金收款", amount: "", payment_method: "cash" },
+  ],
+}
+
 export default function AccountingPage() {
   const [entries, setEntries] = useState([])
   const [form, setForm] = useState(EMPTY_FORM)
@@ -137,6 +150,26 @@ export default function AccountingPage() {
               新增{tab === "expense" ? "支出" : "收入"}
             </h2>
             {error && <div className="bg-red-50 border border-red-200 text-red-700 text-base px-4 py-2 rounded-xl mb-4">{error}</div>}
+
+            {/* 快速填入按鈕 */}
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-gray-400 mb-2">⚡ 快速填入</p>
+              <div className="flex flex-wrap gap-2">
+                {(QUICK_PRESETS[tab] || []).map((preset, idx) => (
+                  <button key={idx} onClick={() => setForm(f => ({
+                    ...f,
+                    category: preset.category,
+                    description: preset.description,
+                    amount: preset.amount || f.amount,
+                    payment_method: preset.payment_method,
+                  }))}
+                    className="px-3.5 py-1.5 bg-gray-50 hover:bg-blue-50 hover:border-blue-300 border border-gray-200 rounded-xl text-base text-gray-700 transition-colors">
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-base font-semibold text-gray-600 mb-1">日期</label>

@@ -1,6 +1,14 @@
 import { supabase } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
 
+function getInvoicePeriod(dateStr) {
+  if (!dateStr) return ''
+  const month = new Date(dateStr).getMonth() + 1
+  const pairs = [[1,2],[3,4],[5,6],[7,8],[9,10],[11,12]]
+  const pair = pairs.find(p => p.includes(month))
+  return pair ? `${pair[0]}-${pair[1]}月` : ''
+}
+
 export async function GET(request, { params }) {
   const { id } = await params
   const { data, error } = await supabase.from('receiving_orders').select('*, receiving_order_items(*)').eq('id', id).single()
@@ -24,6 +32,31 @@ export async function PUT(request, { params }) {
   if (items?.length > 0) {
     const rows = items.map((item, i) => { const r = { ...item, receipt_id: Number(id), sort_order: i }; delete r.id; return r })
     await supabase.from('receiving_order_items').insert(rows)
+  }
+
+  // 自動同步發票到 invoice_statistics（更新時用 upsert by notes 匹配）
+  if (header.invoice_no) {
+    const period = getInvoicePeriod(header.invoice_date || header.order_date)
+    const invoiceNote = `進貨單 ${data.receipt_no || ''} 發票 ${header.invoice_no}`
+    // 先查有沒有舊的發票記錄（用進貨單號匹配）
+    const matchNote = `進貨單 ${data.receipt_no || ''} 發票`
+    const { data: existing } = await supabase.from('invoice_statistics')
+      .select('id').like('notes', `${matchNote}%`).limit(1).single()
+    const invoiceRow = {
+      company_name: header.vendor_name || data.vendor_name || '',
+      type: '進貨',
+      invoice_period: period,
+      invoice_date: header.invoice_date || header.order_date || null,
+      pretax_amount: header.subtotal || 0,
+      tax: header.tax_amount || 0,
+      total_amount: header.total || 0,
+      notes: invoiceNote,
+    }
+    if (existing) {
+      await supabase.from('invoice_statistics').update(invoiceRow).eq('id', existing.id)
+    } else {
+      await supabase.from('invoice_statistics').insert([invoiceRow])
+    }
   }
 
   // Stock adjustment: increase stock when status changes to confirmed (only once)

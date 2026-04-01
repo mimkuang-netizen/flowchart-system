@@ -121,7 +121,9 @@ export default function ReceivingList() {
               <tbody className="divide-y divide-gray-50">
                 {sorted.map(item => (
                   <tr key={item.id} className="hover:bg-green-50">
-                    <td className="px-5 py-4 text-lg font-mono font-semibold text-green-700">{item.receipt_no}</td>
+                    <td className="px-5 py-4 text-lg font-mono font-semibold text-green-700">
+                      <Link href={`/receiving/${item.id}`} className="hover:underline">{item.receipt_no}</Link>
+                    </td>
                     <td className="px-5 py-4 text-lg">{item.vendor_name}</td>
                     <td className="px-5 py-4 text-base text-gray-500">{fmt(item.receipt_date)}</td>
                     <td className="px-5 py-4 text-base text-gray-500">{item.po_no || "—"}</td>

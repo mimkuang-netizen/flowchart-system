@@ -27,6 +27,7 @@ export default function SalesList() {
   const [selected, setSelected] = useState(new Set())
   const [copiedId, setCopiedId] = useState(null)
   const [showPrice, setShowPrice] = useState(true)
+  const [customerMap, setCustomerMap] = useState({})
   const PAGE_SIZE = 20
 
   const handleCopyLink = (itemId) => {
@@ -85,6 +86,17 @@ export default function SalesList() {
   }
 
   useEffect(() => { setPage(1); fetchData() }, [q, status])
+
+  useEffect(() => {
+    fetch("/api/customers").then(r => r.json()).then(data => {
+      const map = {}
+      if (Array.isArray(data)) data.forEach(c => {
+        if (c.short_name) map[c.short_name] = c.short_name
+        if (c.full_name) map[c.full_name] = c.short_name
+      })
+      setCustomerMap(map)
+    }).catch(() => {})
+  }, [])
 
   const handleDelete = async () => {
     await fetch(`/api/sales/${deleteId}`, { method: "DELETE" })
@@ -207,6 +219,7 @@ export default function SalesList() {
                   <th className="px-3 py-4 w-10"><input type="checkbox" onChange={toggleAll} className="w-4 h-4 accent-orange-500" /></th>
                   <SortTh field="order_no">銷貨單號</SortTh>
                   <SortTh field="customer_name">客戶名稱</SortTh>
+                  <th className="px-5 py-4 text-left text-base font-semibold text-gray-500">客戶簡稱</th>
                   <SortTh field="order_date">銷貨日期</SortTh>
                   <SortTh field="status">狀態</SortTh>
                   <SortTh field="total">總金額</SortTh>
@@ -217,8 +230,11 @@ export default function SalesList() {
                 {sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(item => (
                   <tr key={item.id} className="hover:bg-orange-50 transition-colors">
                     <td className="px-3 py-4"><input type="checkbox" checked={selected.has(item.id)} onChange={() => toggleSelect(item.id)} className="w-4 h-4 accent-orange-500" /></td>
-                    <td className="px-5 py-4 text-lg font-mono font-semibold text-orange-600">{item.order_no}</td>
+                    <td className="px-5 py-4 text-lg font-mono font-semibold text-orange-600">
+                      <Link href={`/sales/${item.id}`} className="hover:underline">{item.order_no}</Link>
+                    </td>
                     <td className="px-5 py-4 text-lg">{item.customer_name}</td>
+                    <td className="px-5 py-4 text-base text-gray-500">{customerMap[item.customer_name] || "—"}</td>
                     <td className="px-5 py-4 text-base text-gray-500">{formatDate(item.order_date)}</td>
                     <td className="px-5 py-4">
                       <span className={`px-2.5 py-0.5 rounded-full text-sm font-medium ${(STATUS_MAP[item.status] || STATUS_MAP.draft).color}`}>

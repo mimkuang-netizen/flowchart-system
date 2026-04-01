@@ -30,6 +30,14 @@ const colorMap = {
     arrow: "text-blue-400",
     dot: "bg-blue-500",
   },
+  purple: {
+    section: "border-purple-300 bg-purple-50",
+    label: "bg-purple-600 text-white",
+    icon: "text-purple-600",
+    card: "hover:border-purple-400 hover:shadow-purple-100",
+    arrow: "text-purple-400",
+    dot: "bg-purple-500",
+  },
 };
 
 function Toast({ message, onClose }) {

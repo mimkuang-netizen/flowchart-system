@@ -19,7 +19,7 @@ export default function ReceivingForm() {
   const isNew = id === "new"
   const today = new Date().toISOString().split("T")[0]
 
-  const [form, setForm] = useState({ receipt_no: genNo(), vendor_name: "", receipt_date: today, po_no: "", status: "draft", tax_type: "taxed", subtotal: 0, tax_amount: 0, total: 0, notes: "" })
+  const [form, setForm] = useState({ receipt_no: genNo(), vendor_name: "", receipt_date: today, po_no: "", status: "draft", tax_type: "taxed", subtotal: 0, tax_amount: 0, total: 0, notes: "", invoice_no: "", invoice_date: "" })
   const [items, setItems] = useState([{ ...EMPTY_ITEM }])
   const [vendors, setVendors] = useState([])
   const [products, setProducts] = useState([])
@@ -217,6 +217,24 @@ export default function ReceivingForm() {
           <h2 className="text-xl font-bold text-gray-700 mb-4 pb-3 border-b border-gray-100">備註</h2>
           <textarea value={form.notes || ""} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={3}
             className="w-full px-3 py-2 text-lg border border-gray-300 rounded-xl focus:outline-none focus:border-green-500 resize-none" />
+        </section>
+        <section className="bg-white rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-5 pb-3 border-b border-gray-100">
+            <span className="text-xl">🧾</span>
+            <h2 className="text-xl font-bold text-gray-700">發票資訊</h2>
+            <span className="text-sm text-gray-400">（廠商開立的統編發票）</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div><label className="block text-base font-semibold text-gray-600 mb-1">發票號碼</label>
+              <input value={form.invoice_no || ""} onChange={e => setForm(f => ({ ...f, invoice_no: e.target.value }))}
+                placeholder="如：AB-12345678" className={inputCls} />
+            </div>
+            <div><label className="block text-base font-semibold text-gray-600 mb-1">發票日期</label>
+              <input type="date" value={form.invoice_date || ""} onChange={e => setForm(f => ({ ...f, invoice_date: e.target.value }))}
+                className={inputCls} />
+            </div>
+          </div>
+          <p className="mt-3 text-sm text-gray-400">填寫發票資訊後，儲存時會自動同步到「發票統計明細」</p>
         </section>
         <div className="flex justify-end gap-3 pb-8">
           <Link href="/receiving" className="px-8 py-3 border-2 border-gray-200 text-lg rounded-xl hover:bg-gray-50">取消</Link>
