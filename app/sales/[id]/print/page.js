@@ -28,16 +28,16 @@ export default function SalesPrintPage() {
   const handleDownloadPDF = async () => {
     setDownloading(true)
     try {
-      const html2canvasMod = await import("html2canvas")
-      const html2canvasFn = html2canvasMod.default
-      const jspdfMod = await import("jspdf")
-      const { jsPDF } = jspdfMod
+      const { toPng } = await import("html-to-image")
+      const { jsPDF } = await import("jspdf")
       const el = document.getElementById("print-content")
-      const canvas = await html2canvasFn(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
-      const imgData = canvas.toDataURL("image/png")
+      const imgData = await toPng(el, { quality: 1, pixelRatio: 2, backgroundColor: "#ffffff" })
       const pdf = new jsPDF("l", "mm", [241, 140])
       const pdfW = pdf.internal.pageSize.getWidth()
-      const pdfH = (canvas.height * pdfW) / canvas.width
+      const img = new Image()
+      img.src = imgData
+      await new Promise(r => { img.onload = r })
+      const pdfH = (img.height * pdfW) / img.width
       pdf.addImage(imgData, "PNG", 0, 0, pdfW, pdfH)
       const fileName = `銷貨單_${order?.order_no || id}.pdf`
       pdf.save(fileName)

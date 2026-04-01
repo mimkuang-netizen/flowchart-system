@@ -24,16 +24,16 @@ export default function QuotationPrint() {
   const handleDownloadPDF = async () => {
     setDownloading(true)
     try {
-      const html2canvasMod = await import("html2canvas")
-      const html2canvasFn = html2canvasMod.default
-      const jspdfMod = await import("jspdf")
-      const { jsPDF } = jspdfMod
+      const { toPng } = await import("html-to-image")
+      const { jsPDF } = await import("jspdf")
       const el = document.getElementById("print-content")
-      const canvas = await html2canvasFn(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
-      const imgData = canvas.toDataURL("image/png")
+      const imgData = await toPng(el, { quality: 1, pixelRatio: 2, backgroundColor: "#ffffff" })
       const pdf = new jsPDF("p", "mm", "a4")
       const pdfW = pdf.internal.pageSize.getWidth()
-      const pdfH = (canvas.height * pdfW) / canvas.width
+      const img = new Image()
+      img.src = imgData
+      await new Promise(r => { img.onload = r })
+      const pdfH = (img.height * pdfW) / img.width
       pdf.addImage(imgData, "PNG", 0, 0, pdfW, pdfH)
       const fileName = `報價單_${data.quote_no || id}.pdf`
       pdf.save(fileName)
