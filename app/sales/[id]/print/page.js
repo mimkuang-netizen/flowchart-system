@@ -147,7 +147,7 @@ export default function SalesPrintPage() {
               <td className="border border-gray-300 px-1 py-[1px]">{item.remark || ""}</td>
             </tr>
           ))}
-          {Array.from({ length: Math.max(0, 8 - items.length) }).map((_, i) => (
+          {Array.from({ length: Math.max(0, Math.min(2, 8 - items.length)) }).map((_, i) => (
             <tr key={`e-${i}`}>
               <td className="border border-gray-300 px-1 py-[1px]" colSpan={showPrice ? 7 : 5}>&nbsp;</td>
             </tr>

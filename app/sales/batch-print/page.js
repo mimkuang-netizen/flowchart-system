@@ -93,7 +93,7 @@ function BatchPrintContent() {
                       {showPrice && <td className="border border-gray-200 px-1 py-[1px] text-right">{Number(it.amount).toLocaleString()}</td>}
                     </tr>
                   ))}
-                  {Array.from({ length: Math.max(0, 8 - items.length) }).map((_, i) => (
+                  {Array.from({ length: Math.max(0, Math.min(2, 8 - items.length)) }).map((_, i) => (
                     <tr key={`empty-${i}`}><td className="border border-gray-200 px-1 py-[3px]" colSpan={showPrice ? 6 : 4}>&nbsp;</td></tr>
                   ))}
                 </tbody>
