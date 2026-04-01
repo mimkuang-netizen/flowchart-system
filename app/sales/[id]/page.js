@@ -255,19 +255,30 @@ export default function SalesForm() {
             </button>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-base">
+            <table className="w-full text-base table-fixed">
+              <colgroup>
+                <col className="w-[3%]" />{/* # */}
+                <col className="w-[12%]" />{/* 品號 */}
+                <col />{/* 品名 - 自動填滿 */}
+                <col className="w-[6%]" />{/* 單位 */}
+                <col className="w-[9%]" />{/* 數量 */}
+                <col className="w-[10%]" />{/* 單價 */}
+                <col className="w-[8%]" />{/* 折扣% */}
+                <col className="w-[10%]" />{/* 金額 */}
+                <col className="w-[4%]" />{/* 刪除 */}
+              </colgroup>
               <thead>
                 <tr className="bg-gray-50 text-gray-500">
                   {["#", "品號", "品名", "單位", "數量", "單價", "折扣%", "金額", ""].map(h => (
-                    <th key={h} className="px-3 py-2 text-left">{h}</th>
+                    <th key={h} className="px-2 py-2 text-left">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {items.map((item, idx) => (
                   <tr key={idx} className="hover:bg-orange-50/30">
-                    <td className="px-3 py-2 text-gray-400">{idx + 1}</td>
-                    <td className="px-3 py-2 w-40">
+                    <td className="px-2 py-2 text-gray-400">{idx + 1}</td>
+                    <td className="px-2 py-2">
                       <div className="relative">
                         <input value={item.product_code}
                           onChange={e => updateItem(idx, "product_code", e.target.value)}
@@ -298,28 +309,28 @@ export default function SalesForm() {
                         )}
                       </div>
                     </td>
-                    <td className="px-3 py-2 min-w-52">
+                    <td className="px-2 py-2">
                       <input value={item.product_name} onChange={e => updateItem(idx, "product_name", e.target.value)}
-                        className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:border-orange-400" placeholder="品名" />
+                        className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:border-orange-400 truncate" placeholder="品名" />
                     </td>
-                    <td className="px-3 py-2 w-20">
+                    <td className="px-2 py-2">
                       <input value={item.unit} onChange={e => updateItem(idx, "unit", e.target.value)}
                         className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none" />
                     </td>
-                    <td className="px-3 py-2 w-28">
+                    <td className="px-2 py-2">
                       <input type="number" min={0} value={item.quantity} onChange={e => updateItem(idx, "quantity", e.target.value)}
                         className="w-full px-2 py-1.5 text-right border border-gray-200 rounded-lg focus:outline-none" />
                     </td>
-                    <td className="px-3 py-2 w-32">
+                    <td className="px-2 py-2">
                       <input type="number" min={0} value={item.unit_price} onChange={e => updateItem(idx, "unit_price", e.target.value)}
                         className="w-full px-2 py-1.5 text-right border border-gray-200 rounded-lg focus:outline-none" />
                     </td>
-                    <td className="px-3 py-2 w-24">
+                    <td className="px-2 py-2">
                       <input type="number" min={0} max={100} value={item.discount} onChange={e => updateItem(idx, "discount", e.target.value)}
                         className="w-full px-2 py-1.5 text-right border border-gray-200 rounded-lg focus:outline-none" />
                     </td>
-                    <td className="px-3 py-2 w-32 text-right font-semibold">${Number(item.amount).toLocaleString()}</td>
-                    <td className="px-3 py-2">
+                    <td className="px-2 py-2 text-right font-semibold">${Number(item.amount).toLocaleString()}</td>
+                    <td className="px-2 py-2">
                       <button onClick={() => removeItem(idx)} className="text-gray-300 hover:text-red-400"><Trash2 size={16} /></button>
                     </td>
                   </tr>
