@@ -96,18 +96,10 @@ export const flowSections = [
       },
       {
         id: "stock",
-        label: "庫存查詢",
+        label: "庫存管理",
         icon: "Warehouse",
         href: "/stock",
-        description: "即時庫存查詢",
-        active: true,
-      },
-      {
-        id: "stock-adjust",
-        label: "庫存調整",
-        icon: "SlidersHorizontal",
-        href: "/stock-adjust",
-        description: "庫存盤點調整",
+        description: "庫存查詢與調整",
         active: true,
       },
       {

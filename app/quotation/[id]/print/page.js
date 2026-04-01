@@ -1,20 +1,72 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
+import { Printer, Download, Link2, Check } from "lucide-react"
 
 export default function QuotationPrint() {
   const { id } = useParams()
+  const searchParams = useSearchParams()
   const [data, setData] = useState(null)
   const [error, setError] = useState("")
+  const [copied, setCopied] = useState(false)
+  const [downloading, setDownloading] = useState(false)
+  const action = searchParams.get("action")
+
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/quotation/${id}/print`
+    navigator.clipboard.writeText(url).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  const handleDownloadPDF = async () => {
+    setDownloading(true)
+    try {
+      // Dynamically load html2canvas and jsPDF from CDN
+      if (!window.html2canvas) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement("script")
+          s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+          s.onload = resolve; s.onerror = reject
+          document.head.appendChild(s)
+        })
+      }
+      if (!window.jspdf) {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement("script")
+          s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+          s.onload = resolve; s.onerror = reject
+          document.head.appendChild(s)
+        })
+      }
+      const el = document.getElementById("print-content")
+      const canvas = await window.html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
+      const imgData = canvas.toDataURL("image/png")
+      const { jsPDF } = window.jspdf
+      const pdf = new jsPDF("p", "mm", "a4")
+      const pdfW = pdf.internal.pageSize.getWidth()
+      const pdfH = (canvas.height * pdfW) / canvas.width
+      pdf.addImage(imgData, "PNG", 0, 0, pdfW, pdfH)
+      const fileName = `報價單_${data.quote_no || id}.pdf`
+      pdf.save(fileName)
+    } catch (e) {
+      console.error("PDF download failed:", e)
+      alert("PDF 下載失敗，請改用列印功能")
+    }
+    setDownloading(false)
+  }
 
   useEffect(() => {
     fetch(`/api/quotation/${id}`)
       .then(r => r.json())
       .then(d => {
         setData(d)
-        // 載入完成後自動觸發列印
-        setTimeout(() => window.print(), 600)
+        // If action=download, auto trigger PDF download after load
+        if (action === "download") {
+          setTimeout(() => handleDownloadPDF(), 800)
+        }
       })
       .catch(() => setError("載入失敗"))
   }, [id])
@@ -37,11 +89,19 @@ export default function QuotationPrint() {
         body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; }
       `}</style>
 
-      {/* 列印 / 關閉 按鈕（列印時隱藏）*/}
+      {/* 工具列（列印時隱藏）*/}
       <div className="no-print fixed top-4 right-4 flex gap-2 z-50">
         <button onClick={() => window.print()}
-          className="px-5 py-2.5 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 shadow-lg">
-          🖨️ 列印
+          className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 shadow-lg">
+          <Printer size={18} /> 列印
+        </button>
+        <button onClick={handleDownloadPDF} disabled={downloading}
+          className="flex items-center gap-2 px-5 py-2.5 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 shadow-lg disabled:opacity-50">
+          <Download size={18} /> {downloading ? "下載中..." : "下載 PDF"}
+        </button>
+        <button onClick={handleCopyLink}
+          className="flex items-center gap-2 px-5 py-2.5 bg-green-500 text-white font-semibold rounded-xl hover:bg-green-600 shadow-lg">
+          {copied ? <Check size={18} /> : <Link2 size={18} />} {copied ? "已複製連結" : "複製連結"}
         </button>
         <button onClick={() => window.close()}
           className="px-5 py-2.5 bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300 shadow-lg">
@@ -49,7 +109,7 @@ export default function QuotationPrint() {
         </button>
       </div>
 
-      <div className="max-w-[210mm] mx-auto bg-white p-8" style={{ fontSize: "13px", lineHeight: "1.6" }}>
+      <div id="print-content" className="max-w-[210mm] mx-auto bg-white p-8" style={{ fontSize: "13px", lineHeight: "1.6" }}>
         {/* ====== 公司表頭 ====== */}
         <div className="flex justify-between items-start mb-1">
           <div>

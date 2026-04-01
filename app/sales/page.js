@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, Plus, Pencil, Trash2, ShoppingCart, ChevronLeft, Printer, RefreshCw, Download } from "lucide-react"
+import { Search, Plus, Pencil, Trash2, ShoppingCart, ChevronLeft, Printer, RefreshCw, Download, Link2, Check } from "lucide-react"
 import { exportToExcel } from "@/lib/exportExcel"
 
 const STATUS_MAP = {
@@ -16,7 +16,7 @@ export default function SalesList() {
   const [items, setItems] = useState([])
   const [q, setQ] = useState("")
   const [status, setStatus] = useState("")
-  const [dateFilter, setDateFilter] = useState("")
+  const [dateFilter, setDateFilter] = useState("thisMonth")
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState(null)
   const [page, setPage] = useState(1)
@@ -25,7 +25,17 @@ export default function SalesList() {
   const [syncing, setSyncing] = useState(false)
   const [syncMsg, setSyncMsg] = useState("")
   const [selected, setSelected] = useState(new Set())
+  const [copiedId, setCopiedId] = useState(null)
+  const [showPrice, setShowPrice] = useState(true)
   const PAGE_SIZE = 20
+
+  const handleCopyLink = (itemId) => {
+    const url = `${window.location.origin}/sales/${itemId}/print`
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(itemId)
+      setTimeout(() => setCopiedId(null), 2000)
+    })
+  }
 
   const SortTh = ({ field, children, className = "" }) => (
     <th className={`px-5 py-4 text-left text-base font-semibold text-gray-500 cursor-pointer hover:text-gray-700 select-none ${className}`}
@@ -103,7 +113,7 @@ export default function SalesList() {
   const handleBatchPrint = () => {
     if (selected.size === 0) return
     const ids = [...selected].join(",")
-    window.open(`/sales/batch-print?ids=${ids}`, "_blank")
+    window.open(`/sales/batch-print?ids=${ids}&showPrice=${showPrice}`, "_blank")
   }
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString("zh-TW") : "—"
@@ -155,6 +165,10 @@ export default function SalesList() {
             <button onClick={handleBatchPrint} className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">
               <Printer size={14} /> 批次列印
             </button>
+            <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer select-none">
+              <input type="checkbox" checked={showPrice} onChange={e => setShowPrice(e.target.checked)} className="w-4 h-4 accent-blue-600" />
+              顯示單價
+            </label>
             <button onClick={() => setSelected(new Set())} className="text-sm text-gray-500 hover:text-gray-700">清除選取</button>
           </div>
         </div>
@@ -214,13 +228,19 @@ export default function SalesList() {
                     <td className="px-5 py-4 text-lg font-semibold">{formatMoney(item.total)}</td>
                     <td className="px-5 py-4">
                       <div className="flex gap-2">
-                        <Link href={`/sales/${item.id}`} className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg">
-                          <Pencil size={18} />
-                        </Link>
-                        <Link href={`/sales/${item.id}/print`} target="_blank" className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg">
+                        <Link href={`/sales/${item.id}/print?showPrice=${showPrice}`} target="_blank" className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg" title="列印">
                           <Printer size={18} />
                         </Link>
-                        <button onClick={() => setDeleteId(item.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg">
+                        <Link href={`/sales/${item.id}/print?action=download&showPrice=${showPrice}`} target="_blank" className="p-2 text-gray-400 hover:text-purple-500 hover:bg-purple-50 rounded-lg" title="下載 PDF">
+                          <Download size={18} />
+                        </Link>
+                        <button onClick={() => handleCopyLink(item.id)} className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg" title="複製分享連結">
+                          {copiedId === item.id ? <Check size={18} className="text-green-500" /> : <Link2 size={18} />}
+                        </button>
+                        <Link href={`/sales/${item.id}`} className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg" title="編輯">
+                          <Pencil size={18} />
+                        </Link>
+                        <button onClick={() => setDeleteId(item.id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg" title="刪除">
                           <Trash2 size={18} />
                         </button>
                       </div>

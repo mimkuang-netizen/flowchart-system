@@ -16,6 +16,15 @@ const STATUS_OPTS = [
   { value: "shipped", label: "已出貨" },
   { value: "completed", label: "已完成" },
 ]
+const PAYMENT_METHODS = [
+  { value: "", label: "請選擇" },
+  { value: "bank_transfer", label: "銀行匯款" },
+  { value: "credit_card", label: "信用卡" },
+  { value: "line_pay", label: "LINE Pay" },
+  { value: "monthly", label: "月結（經銷商）" },
+  { value: "cash", label: "現金" },
+  { value: "other", label: "其他" },
+]
 const EMPTY_ITEM = { product_code: "", product_name: "", unit: "", quantity: 1, unit_price: 0, discount: 100, amount: 0, notes: "" }
 
 function genNo() {
@@ -32,7 +41,7 @@ export default function SalesForm() {
 
   const [form, setForm] = useState({
     order_no: genNo(), customer_name: "", order_date: today, delivery_date: "",
-    status: "draft", tax_type: "taxed", subtotal: 0, tax_amount: 0, total: 0, quote_no: "", notes: "",
+    status: "draft", tax_type: "taxed", payment_method: "", subtotal: 0, tax_amount: 0, total: 0, quote_no: "", notes: "",
     invoice_type: "", invoice_no: "", invoice_date: "", invoice_url: "",
   })
   const [invoiceLoading, setInvoiceLoading] = useState(false)
@@ -197,6 +206,12 @@ export default function SalesForm() {
               <label className="block text-base font-semibold text-gray-600 mb-1">稅別</label>
               <select value={form.tax_type} onChange={e => { const t = e.target.value; setForm(f => ({ ...f, tax_type: t, ...calcTotals(items, t) })) }} className={`${inputCls} bg-white`}>
                 {TAX_TYPES.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-base font-semibold text-gray-600 mb-1">付款方式</label>
+              <select value={form.payment_method || ""} onChange={e => setForm(f => ({ ...f, payment_method: e.target.value }))} className={`${inputCls} bg-white`}>
+                {PAYMENT_METHODS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
           </div>

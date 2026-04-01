@@ -7,6 +7,7 @@ import { Printer, X } from "lucide-react"
 function BatchPrintContent() {
   const searchParams = useSearchParams()
   const ids = searchParams.get("ids")?.split(",") || []
+  const showPrice = searchParams.get("showPrice") !== "false"
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -66,7 +67,7 @@ function BatchPrintContent() {
                 <div>銷貨單號：<b>{order.order_no}</b></div>
                 <div>銷貨日期：{order.order_date}</div>
                 <div>客戶名稱：<b>{order.customer_name}</b></div>
-                <div>{order.invoice_no ? `發票號碼：${order.invoice_no}` : ""}</div>
+                <div>{showPrice && order.invoice_no ? `發票號碼：${order.invoice_no}` : ""}</div>
               </div>
 
               {/* Items */}
@@ -77,8 +78,8 @@ function BatchPrintContent() {
                     <th className="border border-gray-300 px-1 py-[2px] text-left">品名/商品描述</th>
                     <th className="border border-gray-300 px-1 py-[2px] w-[28px] text-center">單位</th>
                     <th className="border border-gray-300 px-1 py-[2px] text-right w-[36px]">數量</th>
-                    <th className="border border-gray-300 px-1 py-[2px] text-right w-[50px]">單價</th>
-                    <th className="border border-gray-300 px-1 py-[2px] text-right w-[50px]">金額</th>
+                    {showPrice && <th className="border border-gray-300 px-1 py-[2px] text-right w-[50px]">單價</th>}
+                    {showPrice && <th className="border border-gray-300 px-1 py-[2px] text-right w-[50px]">金額</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -88,12 +89,12 @@ function BatchPrintContent() {
                       <td className="border border-gray-200 px-1 py-[1px]">{it.product_name}</td>
                       <td className="border border-gray-200 px-1 py-[1px] text-center">{it.unit}</td>
                       <td className="border border-gray-200 px-1 py-[1px] text-right">{it.quantity}</td>
-                      <td className="border border-gray-200 px-1 py-[1px] text-right">{Number(it.unit_price).toLocaleString()}</td>
-                      <td className="border border-gray-200 px-1 py-[1px] text-right">{Number(it.amount).toLocaleString()}</td>
+                      {showPrice && <td className="border border-gray-200 px-1 py-[1px] text-right">{Number(it.unit_price).toLocaleString()}</td>}
+                      {showPrice && <td className="border border-gray-200 px-1 py-[1px] text-right">{Number(it.amount).toLocaleString()}</td>}
                     </tr>
                   ))}
                   {Array.from({ length: Math.max(0, 8 - items.length) }).map((_, i) => (
-                    <tr key={`empty-${i}`}><td className="border border-gray-200 px-1 py-[3px]" colSpan={6}>&nbsp;</td></tr>
+                    <tr key={`empty-${i}`}><td className="border border-gray-200 px-1 py-[3px]" colSpan={showPrice ? 6 : 4}>&nbsp;</td></tr>
                   ))}
                 </tbody>
               </table>
@@ -103,13 +104,15 @@ function BatchPrintContent() {
                 <div className="text-[9px] text-gray-500 max-w-[60%]">
                   {order.notes && <span>備註：{order.notes.slice(0, 80)}</span>}
                 </div>
-                <div className="text-right text-[10px] space-y-[1px]">
-                  <div className="flex justify-between gap-3"><span>合計金額</span><span>{subtotal.toLocaleString()}</span></div>
-                  <div className="flex justify-between gap-3"><span>稅　　額</span><span>{taxAmount.toLocaleString()}</span></div>
-                  <div className="flex justify-between gap-3 font-bold border-t border-gray-400 pt-[1px]">
-                    <span>總金額</span><span className="text-red-600">{total.toLocaleString()}</span>
+                {showPrice && (
+                  <div className="text-right text-[10px] space-y-[1px]">
+                    <div className="flex justify-between gap-3"><span>合計金額</span><span>{subtotal.toLocaleString()}</span></div>
+                    <div className="flex justify-between gap-3"><span>稅　　額</span><span>{taxAmount.toLocaleString()}</span></div>
+                    <div className="flex justify-between gap-3 font-bold border-t border-gray-400 pt-[1px]">
+                      <span>總金額</span><span className="text-red-600">{total.toLocaleString()}</span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
               <div className="flex justify-between mt-1 pt-1 border-t border-gray-300 text-[9px] text-gray-500">

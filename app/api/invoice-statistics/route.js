@@ -6,12 +6,16 @@ export async function GET(request) {
   const q = searchParams.get('q') || ''
   const type = searchParams.get('type') || ''
   const period = searchParams.get('period') || ''
+  const year = searchParams.get('year') || ''
 
   let query = supabase.from('invoice_statistics').select('*').order('invoice_date', { ascending: false })
 
   if (q) query = query.or(`company_name.ilike.%${q}%,notes.ilike.%${q}%`)
   if (type) query = query.eq('type', type)
   if (period) query = query.eq('invoice_period', period)
+  if (year) {
+    query = query.gte('invoice_date', `${year}-01-01`).lte('invoice_date', `${year}-12-31`)
+  }
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

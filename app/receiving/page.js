@@ -7,7 +7,7 @@ import { Search, Plus, Pencil, Trash2, PackageCheck, ChevronLeft } from "lucide-
 export default function ReceivingList() {
   const [items, setItems] = useState([])
   const [q, setQ] = useState("")
-  const [dateFilter, setDateFilter] = useState("")
+  const [dateFilter, setDateFilter] = useState("thisMonth")
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState(null)
   const [sortKey, setSortKey] = useState("created_at")

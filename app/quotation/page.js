@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, Plus, Pencil, Trash2, FileText, ChevronLeft, Printer, Download } from "lucide-react"
+import { Search, Plus, Pencil, Trash2, FileText, ChevronLeft, Printer, Download, Link2, Check } from "lucide-react"
 import { exportToExcel } from "@/lib/exportExcel"
 
 const STATUS_MAP = {
@@ -21,13 +21,22 @@ export default function QuotationList() {
   const [items, setItems] = useState([])
   const [q, setQ] = useState("")
   const [status, setStatus] = useState("")
-  const [dateFilter, setDateFilter] = useState("")
+  const [dateFilter, setDateFilter] = useState("thisMonth")
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState(null)
   const [page, setPage] = useState(1)
   const [sortKey, setSortKey] = useState("created_at")
   const [sortDir, setSortDir] = useState("desc")
+  const [copiedId, setCopiedId] = useState(null)
   const PAGE_SIZE = 20
+
+  const handleCopyLink = (itemId) => {
+    const url = `${window.location.origin}/quotation/${itemId}/print`
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(itemId)
+      setTimeout(() => setCopiedId(null), 2000)
+    })
+  }
 
   const SortTh = ({ field, children, className = "" }) => (
     <th className={`px-5 py-4 text-left text-base font-semibold text-gray-500 cursor-pointer hover:text-gray-700 select-none ${className}`}
@@ -191,6 +200,12 @@ export default function QuotationList() {
                         <Link href={`/quotation/${item.id}/print`} target="_blank" className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="列印">
                           <Printer size={18} />
                         </Link>
+                        <Link href={`/quotation/${item.id}/print?action=download`} target="_blank" className="p-2 text-gray-400 hover:text-purple-500 hover:bg-purple-50 rounded-lg transition-colors" title="下載 PDF">
+                          <Download size={18} />
+                        </Link>
+                        <button onClick={() => handleCopyLink(item.id)} className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors" title="複製分享連結">
+                          {copiedId === item.id ? <Check size={18} className="text-green-500" /> : <Link2 size={18} />}
+                        </button>
                         <Link href={`/quotation/${item.id}`} className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors" title="編輯">
                           <Pencil size={18} />
                         </Link>

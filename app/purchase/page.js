@@ -15,7 +15,7 @@ export default function PurchaseList() {
   const [items, setItems] = useState([])
   const [q, setQ] = useState("")
   const [status, setStatus] = useState("")
-  const [dateFilter, setDateFilter] = useState("")
+  const [dateFilter, setDateFilter] = useState("thisMonth")
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState(null)
   const [page, setPage] = useState(1)

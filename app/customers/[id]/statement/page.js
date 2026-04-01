@@ -68,15 +68,91 @@ export default function CustomerStatementPage({ params }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Print styles */}
+      {/* Print styles - 中一刀格式 (24.1cm x 14cm) for dot matrix printer */}
       <style jsx global>{`
         @media print {
+          @page { size: 24.1cm 14cm; margin: 5mm; }
+          body { background: white !important; font-size: 11px !important; line-height: 1.3 !important; }
           header, .no-print { display: none !important; }
-          body { background: white !important; }
           .print-only { display: block !important; }
           .min-h-screen { min-height: auto !important; }
+          .print-statement { padding: 0 !important; }
+          .print-statement .summary-cards { display: none !important; }
+          .print-statement .screen-table { display: none !important; }
+          .print-statement .screen-footer { display: none !important; }
+
+          /* 列印專用表頭 */
+          .print-header {
+            display: flex !important;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 4px;
+          }
+          .print-header-company {
+            font-size: 14px;
+            font-weight: bold;
+          }
+          .print-header-title {
+            font-size: 14px;
+            font-weight: bold;
+          }
+          .print-info-row {
+            display: flex !important;
+            justify-content: space-between;
+            font-size: 11px;
+            margin-bottom: 4px;
+            padding-bottom: 3px;
+            border-bottom: 1px solid #333;
+          }
+
+          /* 列印專用表格 */
+          .print-table {
+            display: table !important;
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+          }
+          .print-table th {
+            border: 1px solid #666;
+            padding: 2px 4px;
+            text-align: left;
+            background: #eee;
+            font-size: 10px;
+          }
+          .print-table td {
+            border: 1px solid #999;
+            padding: 1px 4px;
+            font-size: 11px;
+          }
+          .print-table .text-right { text-align: right; }
+          .print-table .text-center { text-align: center; }
+
+          /* 列印底部合計 */
+          .print-summary-row {
+            display: flex !important;
+            justify-content: flex-end;
+            gap: 20px;
+            font-size: 11px;
+            margin-top: 4px;
+            padding-top: 3px;
+            border-top: 1px solid #333;
+          }
+          .print-summary-row b { font-weight: bold; }
+
+          .print-footer-info {
+            display: block !important;
+            text-align: center;
+            font-size: 10px;
+            margin-top: 6px;
+            color: #555;
+          }
         }
         .print-only { display: none; }
+        .print-header { display: none; }
+        .print-info-row { display: none; }
+        .print-table { display: none; }
+        .print-summary-row { display: none; }
+        .print-footer-info { display: none; }
       `}</style>
 
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30 no-print">
@@ -105,22 +181,67 @@ export default function CustomerStatementPage({ params }) {
         </div>
       </header>
 
-      {/* Print header */}
-      <div className="print-only px-6 py-4 border-b-2 border-gray-800 mb-4">
-        <h1 className="text-2xl font-bold text-center">客戶對帳單</h1>
-        <div className="flex justify-between mt-2 text-sm">
-          <div>
-            <p>客戶：{customer.short_name}{customer.full_name ? ` (${customer.full_name})` : ""}</p>
-            <p>客戶代號：{customer.code || "—"}</p>
-          </div>
-          <div className="text-right">
-            <p>期間：{formatDate(from)} ～ {formatDate(to)}</p>
-            <p>列印日期：{new Date().toLocaleDateString("zh-TW")}</p>
-          </div>
-        </div>
+      {/* Print header - 中一刀格式 */}
+      <div className="print-header">
+        <div className="print-header-company">冠毅國際有限公司</div>
+        <div className="print-header-title">客戶對帳單</div>
+      </div>
+      <div className="print-info-row">
+        <span>客戶：{customer.short_name}{customer.full_name ? ` (${customer.full_name})` : ""}</span>
+        <span>統一編號：{customer.tax_id || customer.unified_no || "—"}</span>
+        <span>對帳期間：{formatDate(from)} ～ {formatDate(to)}</span>
       </div>
 
-      <main className="max-w-6xl mx-auto px-6 py-6 space-y-6">
+      {/* Print-only: items table for dot matrix */}
+      <table className="print-table">
+        <thead>
+          <tr>
+            <th>銷貨單號</th>
+            <th>銷貨日期</th>
+            <th>商品明細</th>
+            <th className="text-right">數量</th>
+            <th className="text-right">單價</th>
+            <th className="text-right">金額</th>
+          </tr>
+        </thead>
+        <tbody>
+          {orders && orders.length > 0 ? orders.flatMap(o => {
+            const oItems = o.sales_order_items || []
+            if (oItems.length === 0) {
+              return [(
+                <tr key={o.id}>
+                  <td>{o.order_no}</td>
+                  <td>{formatDate(o.order_date)}</td>
+                  <td>—</td>
+                  <td className="text-right">—</td>
+                  <td className="text-right">—</td>
+                  <td className="text-right">{formatMoney(o.total)}</td>
+                </tr>
+              )]
+            }
+            return oItems.map((it, idx) => (
+              <tr key={`${o.id}-${idx}`}>
+                <td>{idx === 0 ? o.order_no : ""}</td>
+                <td>{idx === 0 ? formatDate(o.order_date) : ""}</td>
+                <td>{it.product_name || it.name || "—"}{it.spec ? ` (${it.spec})` : ""}</td>
+                <td className="text-right">{it.quantity ?? "—"}</td>
+                <td className="text-right">{it.unit_price != null ? Number(it.unit_price).toLocaleString() : "—"}</td>
+                <td className="text-right">{it.subtotal != null ? formatMoney(it.subtotal ?? it.amount) : formatMoney(it.amount)}</td>
+              </tr>
+            ))
+          }) : (
+            <tr><td colSpan={6} style={{textAlign:"center"}}>此期間無銷貨記錄</td></tr>
+          )}
+        </tbody>
+      </table>
+      <div className="print-summary-row">
+        <span>合計金額：<b>{formatMoney(summary?.total_amount)}</b></span>
+        <span>已收金額：<b>{formatMoney(summary?.paid_amount)}</b></span>
+        <span>未收金額：<b>{formatMoney(summary?.unpaid_amount)}</b></span>
+      </div>
+      <div className="print-footer-info">冠毅國際有限公司　TEL: 06-3841619</div>
+
+      <main className="max-w-6xl mx-auto px-6 py-6 space-y-6 print-statement">
         {/* Date range picker */}
         <form onSubmit={handleSearch} className="flex flex-wrap items-end gap-3 no-print">
           <div>
@@ -151,7 +272,7 @@ export default function CustomerStatementPage({ params }) {
 
         {/* Summary cards */}
         {summary && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 summary-cards">
             <div className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-orange-400">
               <div className="text-sm text-gray-500 mb-1">訂單數</div>
               <div className="text-3xl font-bold text-gray-800">{summary.total_orders}</div>
@@ -172,7 +293,7 @@ export default function CustomerStatementPage({ params }) {
         )}
 
         {/* Orders table */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden screen-table">
           {loading ? (
             <div className="text-center py-16 text-gray-400 text-lg">載入中...</div>
           ) : orders.length === 0 ? (
@@ -268,14 +389,8 @@ export default function CustomerStatementPage({ params }) {
           )}
         </div>
 
-        {/* Print footer */}
-        <div className="print-only text-center text-sm text-gray-500 mt-8 pt-4 border-t border-gray-300">
-          <p>冠毅國際有限公司　TEL: 06-3841619</p>
-          <p>臺南市科技工業園區工業三路85號</p>
-        </div>
-
         {/* Screen footer */}
-        <div className="text-center text-sm text-gray-400 py-4 no-print">
+        <div className="text-center text-sm text-gray-400 py-4 no-print screen-footer">
           冠毅國際有限公司 ｜ 06-3841619
         </div>
       </main>

@@ -11,6 +11,10 @@ export async function GET(request, { params }) {
 export async function PUT(request, { params }) {
   const { id } = await params
   const body = await request.json()
+  // Ensure price_history is stored as a JSON string if it's an array/object
+  if (body.price_history && typeof body.price_history !== 'string') {
+    body.price_history = JSON.stringify(body.price_history)
+  }
   const { data, error } = await supabase.from('products').update(body).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)

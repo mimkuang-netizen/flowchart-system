@@ -1,5 +1,11 @@
 import FlowChart from "./FlowChart";
+import DashboardSummary from "./DashboardSummary";
 
 export default function Home() {
-  return <FlowChart />;
+  return (
+    <div>
+      <DashboardSummary />
+      <FlowChart />
+    </div>
+  );
 }

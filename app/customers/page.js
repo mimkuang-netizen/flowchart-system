@@ -136,6 +136,47 @@ export default function CustomersPage() {
   const [showTagManager, setShowTagManager] = useState(false)
   const [sortKey, setSortKey] = useState("code")
   const [sortDir, setSortDir] = useState("asc")
+  const [selected, setSelected] = useState(new Set())
+  const [showTagApply, setShowTagApply] = useState(false)
+  const [applyingTag, setApplyingTag] = useState(false)
+
+  const toggleSelect = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleAll = () => {
+    if (selected.size === sorted.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(sorted.map(c => c.id)))
+    }
+  }
+
+  const handleApplyTag = async (tagName) => {
+    setApplyingTag(true)
+    const promises = [...selected].map(async (customerId) => {
+      const customer = customers.find(c => c.id === customerId)
+      if (!customer) return
+      const currentTags = customer.tags || []
+      if (currentTags.includes(tagName)) return
+      const newTags = [...currentTags, tagName]
+      await fetch(`/api/customers/${customerId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tags: newTags }),
+      })
+    })
+    await Promise.all(promises)
+    setApplyingTag(false)
+    setShowTagApply(false)
+    setSelected(new Set())
+    fetchCustomers(search, activeTag)
+  }
 
   const SortTh = ({ field, children, className = "" }) => (
     <th className={`px-4 py-3 text-left text-base font-semibold text-gray-600 cursor-pointer hover:text-gray-800 select-none ${className}`}
@@ -301,6 +342,53 @@ export default function CustomersPage() {
           </div>
         )}
 
+        {/* 批次操作列 */}
+        {selected.size > 0 && (
+          <div className="relative flex items-center gap-3 px-4 py-3 bg-orange-50 border border-orange-200 rounded-xl">
+            <span className="text-orange-700 font-semibold">已選 {selected.size} 筆</span>
+            <button
+              onClick={() => setShowTagApply(!showTagApply)}
+              disabled={applyingTag}
+              className="flex items-center gap-1.5 px-4 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 text-sm font-semibold disabled:opacity-50"
+            >
+              <Tag size={14} /> {applyingTag ? "套用中..." : "套用標籤"}
+            </button>
+            <button
+              onClick={() => setSelected(new Set())}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              清除選取
+            </button>
+
+            {/* 標籤選擇下拉 */}
+            {showTagApply && (
+              <div className="absolute left-32 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 p-3 min-w-[200px]">
+                <p className="text-sm text-gray-500 mb-2 font-medium">選擇要套用的標籤：</p>
+                {tags.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-2">尚無標籤，請先至「管理標籤」新增</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {tags.map(t => (
+                      <button
+                        key={t.id}
+                        onClick={() => handleApplyTag(t.name)}
+                        disabled={applyingTag}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors text-left"
+                      >
+                        <span
+                          className="w-3 h-3 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: t.color }}
+                        />
+                        <span className="text-sm font-medium text-gray-700">{t.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* 資料表格 */}
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
           {loading ? (
@@ -313,6 +401,14 @@ export default function CustomersPage() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
+                  <th className="px-3 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      checked={sorted.length > 0 && selected.size === sorted.length}
+                      onChange={toggleAll}
+                      className="w-4 h-4 accent-orange-500"
+                    />
+                  </th>
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-500 w-28">執行</th>
                   <th className="px-4 py-3 text-left text-base font-semibold text-gray-500 w-10">序</th>
                   <SortTh field="code">客戶代號</SortTh>
@@ -328,6 +424,14 @@ export default function CustomersPage() {
               <tbody>
                 {sorted.map((c, i) => (
                   <tr key={c.id} className="border-b border-gray-100 hover:bg-orange-50 transition-colors">
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(c.id)}
+                        onChange={() => toggleSelect(c.id)}
+                        className="w-4 h-4 accent-orange-500"
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
                         <Link

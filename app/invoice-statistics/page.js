@@ -11,11 +11,14 @@ const TYPE_COLORS = {
 }
 
 const PERIODS = ["1-2月", "3-4月", "5-6月", "7-8月", "9-10月", "11-12月"]
+const CURRENT_YEAR = new Date().getFullYear()
+const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 2024 + 2 }, (_, i) => 2024 + i)
 
 export default function InvoiceStatisticsPage() {
   const [items, setItems] = useState([])
   const [q, setQ] = useState("")
   const [filterType, setFilterType] = useState("")
+  const [filterYear, setFilterYear] = useState(String(CURRENT_YEAR))
   const [filterPeriod, setFilterPeriod] = useState("")
   const [loading, setLoading] = useState(true)
   const [deleteId, setDeleteId] = useState(null)
@@ -56,6 +59,7 @@ export default function InvoiceStatisticsPage() {
     const params = new URLSearchParams()
     if (q) params.set("q", q)
     if (filterType) params.set("type", filterType)
+    if (filterYear) params.set("year", filterYear)
     if (filterPeriod) params.set("period", filterPeriod)
     const res = await fetch(`/api/invoice-statistics?${params}`)
     const data = await res.json()
@@ -63,7 +67,7 @@ export default function InvoiceStatisticsPage() {
     setLoading(false)
   }
 
-  useEffect(() => { setPage(1); fetchData() }, [q, filterType, filterPeriod])
+  useEffect(() => { setPage(1); fetchData() }, [q, filterType, filterYear, filterPeriod])
 
   const handleDelete = async () => {
     await fetch(`/api/invoice-statistics/${deleteId}`, { method: "DELETE" })
@@ -245,6 +249,11 @@ export default function InvoiceStatisticsPage() {
             <option value="進貨">進貨</option>
             <option value="出貨">出貨</option>
           </select>
+          <select value={filterYear} onChange={e => setFilterYear(e.target.value)}
+            className="px-4 py-2.5 text-lg border border-gray-300 rounded-xl bg-white focus:outline-none focus:border-indigo-400">
+            <option value="">全部年度</option>
+            {YEAR_OPTIONS.map(y => <option key={y} value={String(y)}>{y}年</option>)}
+          </select>
           <select value={filterPeriod} onChange={e => setFilterPeriod(e.target.value)}
             className="px-4 py-2.5 text-lg border border-gray-300 rounded-xl bg-white focus:outline-none focus:border-indigo-400">
             <option value="">全部期間</option>
@@ -280,7 +289,7 @@ export default function InvoiceStatisticsPage() {
                       {item.type}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500">{item.invoice_period}</td>
+                  <td className="px-4 py-3 text-gray-500">{item.invoice_date ? `${new Date(item.invoice_date).getFullYear()}年 ${item.invoice_period}` : item.invoice_period}</td>
                   <td className="px-4 py-3 text-gray-500">{formatDate(item.invoice_date)}</td>
                   <td className="px-4 py-3 text-right">{formatMoney(item.pretax_amount)}</td>
                   <td className="px-4 py-3 text-right text-gray-500">{formatMoney(item.tax)}</td>
