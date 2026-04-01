@@ -254,7 +254,7 @@ export default function SalesForm() {
               <Plus size={16} /> 新增行
             </button>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-visible">
             <table className="w-full text-base table-fixed">
               <colgroup>
                 <col className="w-[3%]" />{/* # */}
