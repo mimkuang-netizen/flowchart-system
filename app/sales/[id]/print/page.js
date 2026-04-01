@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Printer, X, Download, Link2, Check } from "lucide-react"
+import html2canvas from "html2canvas"
+import { jsPDF } from "jspdf"
 
 export default function SalesPrintPage() {
   const { id } = useParams()
@@ -28,26 +30,9 @@ export default function SalesPrintPage() {
   const handleDownloadPDF = async () => {
     setDownloading(true)
     try {
-      if (!window.html2canvas) {
-        await new Promise((resolve, reject) => {
-          const s = document.createElement("script")
-          s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
-          s.onload = resolve; s.onerror = reject
-          document.head.appendChild(s)
-        })
-      }
-      if (!window.jspdf) {
-        await new Promise((resolve, reject) => {
-          const s = document.createElement("script")
-          s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-          s.onload = resolve; s.onerror = reject
-          document.head.appendChild(s)
-        })
-      }
       const el = document.getElementById("print-content")
-      const canvas = await window.html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true, backgroundColor: "#ffffff" })
       const imgData = canvas.toDataURL("image/png")
-      const { jsPDF } = window.jspdf
       const pdf = new jsPDF("l", "mm", [241, 140])
       const pdfW = pdf.internal.pageSize.getWidth()
       const pdfH = (canvas.height * pdfW) / canvas.width
