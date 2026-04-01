@@ -28,6 +28,7 @@ export default function QuotationList() {
   const [sortKey, setSortKey] = useState("created_at")
   const [sortDir, setSortDir] = useState("desc")
   const [copiedId, setCopiedId] = useState(null)
+  const [customerMap, setCustomerMap] = useState({})
   const PAGE_SIZE = 20
 
   const handleCopyLink = (itemId) => {
@@ -86,6 +87,17 @@ export default function QuotationList() {
   }
 
   useEffect(() => { setPage(1); fetchData() }, [q, status])
+
+  useEffect(() => {
+    fetch("/api/customers").then(r => r.json()).then(data => {
+      const map = {}
+      if (Array.isArray(data)) data.forEach(c => {
+        if (c.short_name) map[c.short_name] = c.short_name
+        if (c.full_name) map[c.full_name] = c.short_name
+      })
+      setCustomerMap(map)
+    }).catch(() => {})
+  }, [])
 
   const handleDelete = async () => {
     await fetch(`/api/quotation/${deleteId}`, { method: "DELETE" })
@@ -179,6 +191,7 @@ export default function QuotationList() {
                 <tr>
                   <SortTh field="quote_no">報價單號</SortTh>
                   <SortTh field="customer_name">客戶名稱</SortTh>
+                  <th className="px-5 py-4 text-left text-base font-semibold text-gray-500">客戶簡稱</th>
                   <SortTh field="quote_date">報價日期</SortTh>
                   <SortTh field="valid_until">有效日期</SortTh>
                   <SortTh field="status">狀態</SortTh>
@@ -189,8 +202,11 @@ export default function QuotationList() {
               <tbody className="divide-y divide-gray-50">
                 {sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(item => (
                   <tr key={item.id} className="hover:bg-orange-50 transition-colors">
-                    <td className="px-5 py-4 text-lg font-mono font-semibold text-orange-600">{item.quote_no}</td>
+                    <td className="px-5 py-4 text-lg font-mono font-semibold text-orange-600">
+                      <Link href={`/quotation/${item.id}`} className="hover:underline">{item.quote_no}</Link>
+                    </td>
                     <td className="px-5 py-4 text-lg">{item.customer_name}</td>
+                    <td className="px-5 py-4 text-base text-gray-500">{customerMap[item.customer_name] || "—"}</td>
                     <td className="px-5 py-4 text-base text-gray-500">{formatDate(item.quote_date)}</td>
                     <td className="px-5 py-4 text-base text-gray-500">{formatDate(item.valid_until)}</td>
                     <td className="px-5 py-4"><StatusBadge status={item.status} /></td>

@@ -139,7 +139,9 @@ export default function PurchaseList() {
               <tbody className="divide-y divide-gray-50">
                 {sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(item => (
                   <tr key={item.id} className="hover:bg-green-50 transition-colors">
-                    <td className="px-5 py-4 text-lg font-mono font-semibold text-green-700">{item.po_no}</td>
+                    <td className="px-5 py-4 text-lg font-mono font-semibold text-green-700">
+                      <Link href={`/purchase/${item.id}`} className="hover:underline">{item.po_no}</Link>
+                    </td>
                     <td className="px-5 py-4 text-lg">{item.vendor_name}</td>
                     <td className="px-5 py-4 text-base text-gray-500">{fmt(item.po_date)}</td>
                     <td className="px-5 py-4 text-base text-gray-500">{fmt(item.expected_date)}</td>
