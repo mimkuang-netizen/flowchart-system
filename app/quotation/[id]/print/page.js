@@ -27,13 +27,19 @@ export default function QuotationPrint() {
       const { toPng } = await import("html-to-image")
       const { jsPDF } = await import("jspdf")
       const el = document.getElementById("print-content")
-      const imgData = await toPng(el, { quality: 1, pixelRatio: 2, backgroundColor: "#ffffff" })
-      const pdf = new jsPDF("p", "mm", "a4")
-      const pdfW = pdf.internal.pageSize.getWidth()
+      const origStyle = el.style.cssText
+      el.style.width = "794px"
+      el.style.minHeight = "auto"
+      el.style.padding = "24px"
+      const imgData = await toPng(el, { quality: 1, pixelRatio: 3, backgroundColor: "#ffffff",
+        filter: (node) => !node?.classList?.contains("print:hidden") })
+      el.style.cssText = origStyle
       const img = new Image()
       img.src = imgData
       await new Promise(r => { img.onload = r })
-      const pdfH = (img.height * pdfW) / img.width
+      const pdfW = 210  // A4 寬
+      const pdfH = (img.height / img.width) * pdfW
+      const pdf = new jsPDF(pdfH > pdfW ? "p" : "l", "mm", [pdfW, Math.max(pdfH, 297)])
       pdf.addImage(imgData, "PNG", 0, 0, pdfW, pdfH)
       const fileName = `報價單_${data.quote_no || id}.pdf`
       pdf.save(fileName)

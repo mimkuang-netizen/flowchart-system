@@ -31,13 +31,21 @@ export default function SalesPrintPage() {
       const { toPng } = await import("html-to-image")
       const { jsPDF } = await import("jspdf")
       const el = document.getElementById("print-content")
-      const imgData = await toPng(el, { quality: 1, pixelRatio: 2, backgroundColor: "#ffffff" })
-      const pdf = new jsPDF("l", "mm", [241, 140])
-      const pdfW = pdf.internal.pageSize.getWidth()
+      // 擷取前先固定寬度，避免 flex/cm 造成偏差
+      const origStyle = el.style.cssText
+      el.style.width = "812px"
+      el.style.minHeight = "auto"
+      el.style.padding = "16px"
+      const imgData = await toPng(el, { quality: 1, pixelRatio: 3, backgroundColor: "#ffffff",
+        filter: (node) => !node?.classList?.contains("print:hidden") })
+      el.style.cssText = origStyle
       const img = new Image()
       img.src = imgData
       await new Promise(r => { img.onload = r })
-      const pdfH = (img.height * pdfW) / img.width
+      // 依照圖片比例建立 PDF（橫式），單位 mm
+      const pdfW = 241  // 21.49cm
+      const pdfH = (img.height / img.width) * pdfW
+      const pdf = new jsPDF(pdfW > pdfH ? "l" : "p", "mm", [pdfW, pdfH])
       pdf.addImage(imgData, "PNG", 0, 0, pdfW, pdfH)
       const fileName = `銷貨單_${order?.order_no || id}.pdf`
       pdf.save(fileName)
