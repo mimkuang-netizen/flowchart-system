@@ -1,7 +1,9 @@
-import { supabase } from '@/lib/supabase'
+import { requireErpAuth } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const { data, error } = await supabase
     .from('stock_adjustments')
     .select('*')
@@ -11,6 +13,8 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const body = await request.json()
   const { product_id, product_code, product_name, adjust_type, quantity, before_qty, after_qty, notes } = body
 

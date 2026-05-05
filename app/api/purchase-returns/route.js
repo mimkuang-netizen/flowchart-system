@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { requireErpAuth } from '@/lib/api-auth';
 
 // GET /api/purchase-returns?q=&status=
 export async function GET(request) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   try {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get('q') || '';
@@ -33,6 +35,8 @@ export async function GET(request) {
 
 // POST /api/purchase-returns
 export async function POST(request) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   try {
     const body = await request.json();
     const { items, ...header } = body;

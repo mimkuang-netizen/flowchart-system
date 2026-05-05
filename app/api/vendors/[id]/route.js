@@ -1,7 +1,9 @@
-import { supabase } from '@/lib/supabase'
+import { requireErpAuth } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 
 export async function GET(request, { params }) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const { id } = await params
   const { data, error } = await supabase.from('vendors').select('*').eq('id', id).single()
   if (error) return NextResponse.json({ error: error.message }, { status: 404 })
@@ -9,6 +11,8 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const { id } = await params
   const body = await request.json()
   const { data, error } = await supabase.from('vendors').update(body).eq('id', id).select().single()
@@ -17,6 +21,8 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const { id } = await params
   const { error } = await supabase.from('vendors').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

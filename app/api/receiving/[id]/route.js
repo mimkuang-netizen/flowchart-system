@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { requireErpAuth } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 
 function getInvoicePeriod(dateStr) {
@@ -10,6 +10,8 @@ function getInvoicePeriod(dateStr) {
 }
 
 export async function GET(request, { params }) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const { id } = await params
   const { data, error } = await supabase.from('receiving_orders').select('*, receiving_order_items(*)').eq('id', id).single()
   if (error) return NextResponse.json({ error: error.message }, { status: 404 })
@@ -17,6 +19,8 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const { id } = await params
   const body = await request.json()
   const { items, ...header } = body
@@ -30,7 +34,7 @@ export async function PUT(request, { params }) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   await supabase.from('receiving_order_items').delete().eq('receipt_id', id)
   if (items?.length > 0) {
-    const rows = items.map((item, i) => { const r = { ...item, receipt_id: Number(id), sort_order: i }; delete r.id; return r })
+    const rows = items.map((item, i) => { const r = { ...item, receipt_id: Number(id), sort_order: i }; delete r.id; delete r.product_id; return r })
     await supabase.from('receiving_order_items').insert(rows)
   }
 
@@ -79,6 +83,8 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const { id } = await params
   const { error } = await supabase.from('receiving_orders').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

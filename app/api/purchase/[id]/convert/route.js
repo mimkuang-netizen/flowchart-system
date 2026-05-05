@@ -1,8 +1,10 @@
-import { supabase } from '@/lib/supabase'
+import { requireErpAuth } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 
 // 採購單轉進貨單
 export async function POST(request, { params }) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const { id } = await params
 
   // 取得採購單

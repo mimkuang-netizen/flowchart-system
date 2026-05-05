@@ -1,7 +1,9 @@
-import { supabase } from '@/lib/supabase'
+import { requireErpAuth } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 
 export async function GET(request) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const { searchParams } = new URL(request.url)
   const q = searchParams.get('q') || ''
   const category = searchParams.get('category') || ''
@@ -17,6 +19,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const body = await request.json()
   // Ensure price_history is stored as a JSON string if it's an array/object
   if (body.price_history && typeof body.price_history !== 'string') {

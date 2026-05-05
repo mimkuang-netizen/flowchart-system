@@ -1,7 +1,9 @@
-import { supabase } from '@/lib/supabase'
+import { requireErpAuth } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 
 export async function GET(request, { params }) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const { id } = await params
 
   // First get customer info

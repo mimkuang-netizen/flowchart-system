@@ -1,7 +1,9 @@
-import { supabase } from '@/lib/supabase'
+import { requireErpAuth } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 
 export async function GET(request) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const { searchParams } = new URL(request.url)
   const q = searchParams.get('q') || ''
   const tag = searchParams.get('tag') || ''
@@ -40,6 +42,8 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const body = await request.json()
   const { data, error } = await supabase
     .from('customers')

@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { requireErpAuth } from '@/lib/api-auth';
 
 // GET /api/purchase-returns/[id]
 export async function GET(request, { params }) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   try {
     const { id } = await params;
 
@@ -26,6 +28,8 @@ export async function GET(request, { params }) {
 
 // PUT /api/purchase-returns/[id]
 export async function PUT(request, { params }) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   try {
     const { id } = await params;
     const body = await request.json();
@@ -75,6 +79,8 @@ export async function PUT(request, { params }) {
 
 // DELETE /api/purchase-returns/[id]
 export async function DELETE(request, { params }) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   try {
     const { id } = await params;
 

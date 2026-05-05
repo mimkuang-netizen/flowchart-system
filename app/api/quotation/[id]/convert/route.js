@@ -1,8 +1,10 @@
-import { supabase } from '@/lib/supabase'
+import { requireErpAuth } from '@/lib/api-auth'
 import { NextResponse } from 'next/server'
 
 // 報價單轉銷貨單
 export async function POST(request, { params }) {
+  const { error: authErr, supabase } = await requireErpAuth()
+  if (authErr) return authErr
   const { id } = await params
 
   // 取得報價單
@@ -14,11 +16,12 @@ export async function POST(request, { params }) {
 
   if (qErr || !quote) return NextResponse.json({ error: '找不到報價單' }, { status: 404 })
 
-  // 產生銷貨單號
+  // 產生銷貨單號（當日流水號）
   const d = new Date()
   const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
-  const seq = String(Math.floor(Math.random() * 900) + 100)
-  const orderNo = `SO${ymd}${seq}`
+  const { data: todayOrders } = await supabase.from('sales_orders').select('order_no').like('order_no', `${ymd}%`)
+  const seq = String((todayOrders?.length || 0) + 1).padStart(3, '0')
+  const orderNo = `${ymd}${seq}`
 
   // 建立銷貨單
   const { data: salesOrder, error: sErr } = await supabase
