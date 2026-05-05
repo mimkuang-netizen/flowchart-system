@@ -87,6 +87,13 @@ async function syncOrders() {
 
 // POST: 手動同步（從前端按鈕觸發）
 export async function POST() {
+  // D1 EasyStore 已棄用（2026-05-05），未來新官網上線前如需重啟，移除下方 return 即可
+  console.warn('[DEPRECATED] EasyStore manual sync 已停用 (D1, 2026-05-05)')
+  return NextResponse.json(
+    { error: 'EasyStore sync deprecated', deprecated_at: '2026-05-05', ref: 'D1' },
+    { status: 410 }
+  )
+
   try {
     const result = await syncOrders()
     return NextResponse.json(result, { status: result.status || 200 })
@@ -97,6 +104,13 @@ export async function POST() {
 
 // GET: Vercel Cron 定時同步（每小時自動拉取一次）
 export async function GET(request) {
+  // D1 EasyStore 已棄用（2026-05-05），未來新官網上線前如需重啟，移除下方 return 即可
+  console.warn('[DEPRECATED] EasyStore cron sync 已停用 (D1, 2026-05-05)')
+  return NextResponse.json(
+    { error: 'EasyStore sync deprecated', deprecated_at: '2026-05-05', ref: 'D1' },
+    { status: 410 }
+  )
+
   // 驗證 Vercel Cron 請求（可選安全檢查）
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET

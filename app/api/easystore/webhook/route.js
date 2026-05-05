@@ -6,6 +6,13 @@ import { NextResponse } from 'next/server'
 // 在 EasyStore 後台設定 Webhook，事件選擇 order.created
 
 export async function POST(request) {
+  // D1 EasyStore 已棄用（2026-05-05），未來新官網上線前如需重啟，移除下方 return 即可
+  console.warn('[DEPRECATED] EasyStore webhook 已停用 (D1, 2026-05-05)')
+  return NextResponse.json(
+    { error: 'EasyStore sync deprecated', deprecated_at: '2026-05-05', ref: 'D1' },
+    { status: 410 }
+  )
+
   try {
     const body = await request.json()
 
