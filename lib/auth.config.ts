@@ -33,7 +33,15 @@ export const authConfig: NextAuthConfig = {
       const role = (auth?.user as { role?: string })?.role
       const pathname = nextUrl.pathname
 
-      const publicPaths = ['/login', '/api/auth', '/_next', '/favicon', '/icon']
+      const publicPaths = [
+        '/login',
+        '/api/auth',
+        '/_next',
+        '/favicon',
+        '/icon',
+        '/api/webhooks',     // Phase 3 — LINE / Meta / 其他外部 webhook 必須公開（用 signature 驗章自身保護）
+        '/api/easystore/webhook',  // 既有 EasyStore webhook（已 deprecated）
+      ]
       if (publicPaths.some(p => pathname.startsWith(p))) return true
 
       if (!isLoggedIn) return false
