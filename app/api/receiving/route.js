@@ -9,6 +9,15 @@ function getInvoicePeriod(dateStr) {
   return pair ? `${pair[0]}-${pair[1]}月` : ''
 }
 
+// 把空字串轉成 null，避免 DATE 或數字欄位寫入失敗
+function sanitizeEmpty(obj) {
+  const out = { ...obj }
+  for (const k of Object.keys(out)) {
+    if (out[k] === '') out[k] = null
+  }
+  return out
+}
+
 export async function GET(request) {
   const { error: authErr, supabase } = await requireErpAuth()
   if (authErr) return authErr
@@ -25,11 +34,12 @@ export async function POST(request) {
   const { error: authErr, supabase } = await requireErpAuth()
   if (authErr) return authErr
   const body = await request.json()
-  const { items, ...header } = body
+  const { items, ...rawHeader } = body
+  const header = sanitizeEmpty(rawHeader)
   const { data: rec, error } = await supabase.from('receiving_orders').insert([header]).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   if (items?.length > 0) {
-    const rows = items.map((item, i) => { const r = { ...item, receipt_id: rec.id, sort_order: i }; delete r.id; delete r.product_id; return r })
+    const rows = items.map((item, i) => { const r = sanitizeEmpty({ ...item, receipt_id: rec.id, sort_order: i }); delete r.id; delete r.product_id; return r })
     await supabase.from('receiving_order_items').insert(rows)
   }
 
