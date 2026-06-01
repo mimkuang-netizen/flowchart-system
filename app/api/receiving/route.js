@@ -1,4 +1,5 @@
 import { requireErpAuth } from '@/lib/api-auth'
+import { ensureOrderNo } from '@/lib/order-no'
 import { NextResponse } from 'next/server'
 
 function getInvoicePeriod(dateStr) {
@@ -36,6 +37,8 @@ export async function POST(request) {
   const body = await request.json()
   const { items, ...rawHeader } = body
   const header = sanitizeEmpty(rawHeader)
+  // 統一單號：YYYYMMDD + 4 位序號，依 receipt_date 計算
+  header.receipt_no = await ensureOrderNo(supabase, 'receiving_orders', header.receipt_date, header.receipt_no)
   const { data: rec, error } = await supabase.from('receiving_orders').insert([header]).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   if (items?.length > 0) {

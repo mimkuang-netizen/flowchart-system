@@ -1,4 +1,6 @@
 import { requireErpAuth } from '@/lib/api-auth'
+import { ensureOrderNo } from '@/lib/order-no'
+import { sanitizeEmpty } from '@/lib/po-to-ro'
 import { NextResponse } from 'next/server'
 
 export async function GET(request) {
@@ -27,15 +29,18 @@ export async function POST(request) {
   const { error: authErr, supabase } = await requireErpAuth()
   if (authErr) return authErr
   const body = await request.json()
-  const { items, ...header } = body
+  const { items, ...rawHeader } = body
 
   // 移除前端傳來但資料表不需要的欄位
-  delete header.customer_id
-  delete header.quotation_items
+  delete rawHeader.customer_id
+  delete rawHeader.quotation_items
+  const header = sanitizeEmpty(rawHeader)
+  // 統一單號：YYYYMMDD + 4 位序號，依 quote_date 計算
+  header.quote_no = await ensureOrderNo(supabase, 'quotations', header.quote_date, header.quote_no)
 
   // 清理 items 中的 product_id（若資料表欄位型別不符）
   const cleanItems = items?.map((item, i) => {
-    const row = { ...item, sort_order: i }
+    const row = sanitizeEmpty({ ...item, sort_order: i })
     delete row.product_id
     delete row.id
     return row

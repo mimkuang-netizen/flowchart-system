@@ -1,5 +1,6 @@
 import { requireErpAuth } from '@/lib/api-auth'
 import { autoConvertPoToRo, sanitizeEmpty } from '@/lib/po-to-ro'
+import { ensureOrderNo } from '@/lib/order-no'
 import { NextResponse } from 'next/server'
 
 export async function GET(request) {
@@ -26,6 +27,8 @@ export async function POST(request) {
   const { items, ...rawHeader } = body
   delete rawHeader.vendor_id
   const header = sanitizeEmpty(rawHeader)
+  // 統一單號：YYYYMMDD + 4 位序號，依 po_date 計算
+  header.po_no = await ensureOrderNo(supabase, 'purchase_orders', header.po_date, header.po_no)
   const { data: po, error } = await supabase.from('purchase_orders').insert([header]).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   if (items?.length > 0) {

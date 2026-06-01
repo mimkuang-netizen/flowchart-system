@@ -17,9 +17,14 @@ const statusOptions = [
   { value: 'cancelled', label: '已取消' },
 ];
 
-const generateReturnNo = () => {
-  return 'PRT' + Date.now();
-};
+// 依「選擇的日期」向 server 取下一個單號（YYYYMMDD + 4 位序號）
+async function fetchNextNo(date) {
+  try {
+    const res = await fetch(`/api/order-no?type=purchase_returns&date=${encodeURIComponent(date)}`)
+    const data = await res.json()
+    return data.no || ""
+  } catch { return "" }
+}
 
 const calcTotals = (items, taxType) => {
   const subtotal = items.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
@@ -44,7 +49,7 @@ export default function PurchaseReturnFormPage() {
   const [productSearch, setProductSearch] = useState('');
 
   const [form, setForm] = useState({
-    return_no: generateReturnNo(),
+    return_no: "",
     vendor_id: '',
     vendor_name: '',
     return_date: new Date().toISOString().split('T')[0],
@@ -75,6 +80,14 @@ export default function PurchaseReturnFormPage() {
     };
     fetchVendors();
   }, []);
+
+  // 新增模式：依「退回日期」自動產生單號（YYYYMMDD + 4 位序號）
+  useEffect(() => {
+    if (!isNew || !form.return_date) return;
+    fetchNextNo(form.return_date).then(no => {
+      if (no) setForm(f => ({ ...f, return_no: no }));
+    });
+  }, [isNew, form.return_date]);
 
   // Fetch existing data
   useEffect(() => {

@@ -1,4 +1,6 @@
 import { requireErpAuth } from '@/lib/api-auth'
+import { ensureOrderNo } from '@/lib/order-no'
+import { sanitizeEmpty } from '@/lib/po-to-ro'
 import { NextResponse } from 'next/server'
 
 export async function GET(request) {
@@ -8,11 +10,14 @@ export async function GET(request) {
   const q = searchParams.get('q') || ''
   const paymentStatus = searchParams.get('payment_status') || ''
   const customer = searchParams.get('customer') || ''
+  const limit = Number(searchParams.get('limit')) || 0
+  const offset = Number(searchParams.get('offset')) || 0
 
   let query = supabase.from('sales_orders').select('*').order('created_at', { ascending: false })
   if (q) query = query.or(`order_no.ilike.%${q}%,customer_name.ilike.%${q}%`)
   if (paymentStatus) query = query.eq('payment_status', paymentStatus)
   if (customer) query = query.eq('customer_name', customer)
+  if (limit > 0) query = query.range(offset, offset + limit - 1)
 
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -23,16 +28,10 @@ export async function POST(request) {
   const { error: authErr, supabase } = await requireErpAuth()
   if (authErr) return authErr
   const body = await request.json()
-  const { items, ...header } = body
-
-  // 自動產生不重複的銷貨單號
-  const d = new Date()
-  const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`
-  const { data: todayOrders } = await supabase.from('sales_orders').select('order_no').like('order_no', `${ymd}%`)
-  const existingNos = new Set((todayOrders || []).map(o => o.order_no))
-  let seq = (todayOrders?.length || 0) + 1
-  while (existingNos.has(`${ymd}${String(seq).padStart(3, '0')}`)) seq++
-  header.order_no = `${ymd}${String(seq).padStart(3, '0')}`
+  const { items, ...rawHeader } = body
+  const header = sanitizeEmpty(rawHeader)
+  // 統一單號：YYYYMMDD + 4 位序號，依 order_date 計算
+  header.order_no = await ensureOrderNo(supabase, 'sales_orders', header.order_date, header.order_no)
 
   const { data: order, error } = await supabase.from('sales_orders').insert([header]).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

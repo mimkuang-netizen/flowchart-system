@@ -24,11 +24,13 @@ const PAYMENT_METHODS = [
 
 const EMPTY_ITEM = { product_code: "", product_name: "", unit: "", quantity: 1, unit_price: 0, discount: 100, amount: 0, remark: "" }
 
-function genNo() {
-  const d = new Date()
-  const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`
-  const seq = String(Math.floor(Math.random() * 900) + 100)
-  return `QT${ymd}${seq}`
+// 依「選擇的日期」向 server 取下一個單號（YYYYMMDD + 4 位序號）
+async function fetchNextNo(date) {
+  try {
+    const res = await fetch(`/api/order-no?type=quotations&date=${encodeURIComponent(date)}`)
+    const data = await res.json()
+    return data.no || ""
+  } catch { return "" }
 }
 
 /* ====== 商品選擇彈窗 ====== */
@@ -116,7 +118,7 @@ export default function QuotationForm() {
   })()
 
   const [form, setForm] = useState({
-    quote_no: genNo(), customer_name: "", quote_date: today, valid_until: threeMonthsLater,
+    quote_no: "", customer_name: "", quote_date: today, valid_until: threeMonthsLater,
     status: "draft", tax_type: "taxed", subtotal: 0, tax_amount: 0, total: 0, notes: "",
     payment_deadline: "確認下單後3-5日內支付款項",
     payment_method: "銀行轉帳",
@@ -151,6 +153,14 @@ export default function QuotationForm() {
         .catch(() => { setError("找不到此報價單"); setLoading(false) })
     }
   }, [id, isNew])
+
+  // 新增模式：依「報價日期」自動產生單號（日期變動時重新產生）
+  useEffect(() => {
+    if (!isNew || !form.quote_date) return
+    fetchNextNo(form.quote_date).then(no => {
+      if (no) setForm(f => ({ ...f, quote_no: no }))
+    })
+  }, [isNew, form.quote_date])
 
   const calcTotals = useCallback((itemList, taxType) => {
     const subtotal = itemList.reduce((s, item) => s + (Number(item.amount) || 0), 0)

@@ -68,10 +68,9 @@ export default function SalesReturnForm() {
   const isNew = id === "new"
 
   const today = new Date().toISOString().slice(0, 10)
-  const genNo = () => "RT" + new Date().toISOString().replace(/[-T:\.Z]/g, "").slice(0, 14)
 
   const [form, setForm] = useState({
-    return_no: genNo(), customer_name: "", return_date: today,
+    return_no: "", customer_name: "", return_date: today,
     original_order_no: "", reason: "", status: "draft", tax_type: "taxed",
     subtotal: 0, tax_amount: 0, total: 0, notes: "",
   })
@@ -108,6 +107,15 @@ export default function SalesReturnForm() {
         .catch(() => { setError("找不到此退回單"); setLoading(false) })
     }
   }, [id, isNew])
+
+  // 新增模式：依「退回日期」自動產生單號（YYYYMMDD + 4 位序號，依日期變動）
+  useEffect(() => {
+    if (!isNew || !form.return_date) return
+    fetch(`/api/order-no?type=sales_returns&date=${encodeURIComponent(form.return_date)}`)
+      .then(r => r.json())
+      .then(d => { if (d.no) setForm(f => ({ ...f, return_no: d.no })) })
+      .catch(() => {})
+  }, [isNew, form.return_date])
 
   const calcTotals = useCallback((itemList, taxType) => {
     const subtotal = itemList.reduce((s, it) => s + (Number(it.amount) || 0), 0)

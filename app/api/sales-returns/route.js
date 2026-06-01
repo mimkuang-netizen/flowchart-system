@@ -1,4 +1,6 @@
 import { requireErpAuth } from '@/lib/api-auth'
+import { ensureOrderNo } from '@/lib/order-no'
+import { sanitizeEmpty } from '@/lib/po-to-ro'
 import { NextResponse } from 'next/server'
 
 export async function GET(request) {
@@ -21,7 +23,10 @@ export async function POST(request) {
   const { error: authErr, supabase } = await requireErpAuth()
   if (authErr) return authErr
   const body = await request.json()
-  const { items, ...header } = body
+  const { items, ...rawHeader } = body
+  const header = sanitizeEmpty(rawHeader)
+  // 統一單號：YYYYMMDD + 4 位序號，依 return_date 計算
+  header.return_no = await ensureOrderNo(supabase, 'sales_returns', header.return_date, header.return_no)
 
   const { data: order, error } = await supabase.from('sales_returns').insert([header]).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

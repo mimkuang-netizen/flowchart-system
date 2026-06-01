@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireErpAuth } from '@/lib/api-auth';
+import { ensureOrderNo } from '@/lib/order-no';
+import { sanitizeEmpty } from '@/lib/po-to-ro';
 
 // GET /api/purchase-returns?q=&status=
 export async function GET(request) {
@@ -39,7 +41,10 @@ export async function POST(request) {
   if (authErr) return authErr
   try {
     const body = await request.json();
-    const { items, ...header } = body;
+    const { items, ...rawHeader } = body;
+    const header = sanitizeEmpty(rawHeader);
+    // 統一單號：YYYYMMDD + 4 位序號，依 return_date 計算
+    header.return_no = await ensureOrderNo(supabase, 'purchase_returns', header.return_date, header.return_no);
 
     // Insert header
     const { data: returnData, error: returnError } = await supabase

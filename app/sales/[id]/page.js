@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
-import { ChevronLeft, Save, ShoppingCart, Plus, Trash2, Search, Printer, FileText, ExternalLink, Loader2 } from "lucide-react"
+import { ChevronLeft, Save, ShoppingCart, Plus, Trash2, Search, Printer, FileText, ExternalLink, Loader2, Package } from "lucide-react"
 
 const TAX_TYPES = [
   { value: "taxed", label: "含稅（外加5%）" },
@@ -16,6 +16,11 @@ const STATUS_OPTS = [
   { value: "shipped", label: "已出貨" },
   { value: "completed", label: "已完成" },
 ]
+const PAYMENT_STATUS_OPTS = [
+  { value: "unpaid", label: "未收款" },
+  { value: "partial", label: "部分收款" },
+  { value: "paid", label: "已收款" },
+]
 const PAYMENT_METHODS = [
   { value: "", label: "請選擇" },
   { value: "bank_transfer", label: "銀行匯款" },
@@ -27,10 +32,13 @@ const PAYMENT_METHODS = [
 ]
 const EMPTY_ITEM = { product_code: "", product_name: "", unit: "", quantity: 1, unit_price: 0, discount: 100, amount: 0, notes: "" }
 
-function genNo() {
-  const d = new Date()
-  const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`
-  return `SO${ymd}${String(Math.floor(Math.random() * 900) + 100)}`
+// 依「選擇的日期」向 server 取下一個單號（YYYYMMDD + 4 位序號）
+async function fetchNextNo(date) {
+  try {
+    const res = await fetch(`/api/order-no?type=sales_orders&date=${encodeURIComponent(date)}`)
+    const data = await res.json()
+    return data.no || ""
+  } catch { return "" }
 }
 
 export default function SalesForm() {
@@ -40,7 +48,7 @@ export default function SalesForm() {
   const today = new Date().toISOString().split("T")[0]
 
   const [form, setForm] = useState({
-    order_no: genNo(), customer_name: "", order_date: today, delivery_date: "",
+    order_no: "", customer_name: "", order_date: today, delivery_date: "",
     status: "draft", tax_type: "taxed", payment_method: "", subtotal: 0, tax_amount: 0, total: 0, quote_no: "", notes: "",
     invoice_type: "", invoice_no: "", invoice_date: "", invoice_url: "",
   })
@@ -59,6 +67,7 @@ export default function SalesForm() {
   useEffect(() => {
     fetch("/api/customers").then(r => r.json()).then(d => setCustomers(Array.isArray(d) ? d : []))
     fetch("/api/products?limit=500").then(r => r.json()).then(d => setProducts(Array.isArray(d) ? d : []))
+    // 單號改由下方依 order_date useEffect 取得
     if (!isNew) {
       fetch(`/api/sales/${id}`)
         .then(r => r.json())
@@ -80,6 +89,14 @@ export default function SalesForm() {
         .catch(() => { setError("找不到此銷貨單"); setLoading(false) })
     }
   }, [id, isNew])
+
+  // 新增模式：依「銷貨日期」自動產生單號（日期變動時重新產生）
+  useEffect(() => {
+    if (!isNew || !form.order_date) return
+    fetchNextNo(form.order_date).then(no => {
+      if (no) setForm(f => ({ ...f, order_no: no }))
+    })
+  }, [isNew, form.order_date])
 
   const calcTotals = useCallback((itemList, taxType) => {
     const subtotal = itemList.reduce((s, it) => s + (Number(it.amount) || 0), 0)
@@ -108,7 +125,7 @@ export default function SalesForm() {
   const removeItem = (i) => setItems(prev => { const u = prev.filter((_, idx) => idx !== i); setForm(f => ({ ...f, ...calcTotals(u, f.tax_type) })); return u })
 
   const [selectedCustomer, setSelectedCustomer] = useState(null)
-  const pickCustomer = (c) => { setForm(f => ({ ...f, customer_name: c.short_name, customer_id: c.id })); setSelectedCustomer(c); setShowCustomerList(false) }
+  const pickCustomer = (c) => { setForm(f => ({ ...f, customer_name: c.short_name, customer_id: c.id, payment_method: c.default_payment_method || f.payment_method || "" })); setSelectedCustomer(c); setShowCustomerList(false) }
   const pickProduct = (product, index) => {
     setItems(prev => {
       const updated = prev.map((item, i) => {
@@ -127,7 +144,9 @@ export default function SalesForm() {
     const validItems = items.filter(it => it.product_name.trim())
     if (validItems.length === 0) { setError("請至少新增一項商品"); return }
     setError(""); setSaving(true)
-    const payload = { ...form, items: validItems }; delete payload.sales_order_items
+    const payload = { ...form, items: validItems.map(({ id, order_id, product_id, ...rest }) => rest) }
+    delete payload.sales_order_items; delete payload.customer_id; delete payload.id; delete payload.created_at
+    ;["delivery_date", "invoice_date"].forEach(k => { if (payload[k] === "") payload[k] = null })
     const res = await fetch(isNew ? "/api/sales" : `/api/sales/${id}`,
       { method: isNew ? "POST" : "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
     const data = await res.json(); setSaving(false)
@@ -203,9 +222,9 @@ export default function SalesForm() {
               <input type="date" value={form.order_date} onChange={e => setForm(f => ({ ...f, order_date: e.target.value }))} className={inputCls} />
             </div>
             <div>
-              <label className="block text-base font-semibold text-gray-600 mb-1">狀態</label>
-              <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} className={`${inputCls} bg-white`}>
-                {STATUS_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              <label className="block text-base font-semibold text-gray-600 mb-1">付款狀態</label>
+              <select value={form.payment_status || "unpaid"} onChange={e => setForm(f => ({ ...f, payment_status: e.target.value }))} className={`${inputCls} bg-white`}>
+                {PAYMENT_STATUS_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </div>
             <div>
@@ -424,9 +443,14 @@ export default function SalesForm() {
 
         <div className="flex justify-between pb-8">
           {!isNew && (
-            <Link href={`/sales/${id}/print`} target="_blank" className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white text-lg font-semibold rounded-xl hover:bg-blue-600">
-              <Printer size={18} /> 列印銷貨單
-            </Link>
+            <div className="flex gap-3">
+              <Link href={`/sales/${id}/print`} target="_blank" className="flex items-center gap-2 px-6 py-3 bg-blue-500 text-white text-lg font-semibold rounded-xl hover:bg-blue-600">
+                <Printer size={18} /> 列印銷貨單
+              </Link>
+              <Link href={`/print/shipping-label/${id}`} target="_blank" className="flex items-center gap-2 px-6 py-3 bg-orange-500 text-white text-lg font-semibold rounded-xl hover:bg-orange-600">
+                <Package size={18} /> 列印託運單
+              </Link>
+            </div>
           )}
           <div className="flex gap-3 ml-auto">
             <Link href="/sales" className="px-8 py-3 border-2 border-gray-200 text-lg rounded-xl hover:bg-gray-50">取消</Link>

@@ -6,13 +6,16 @@ import Link from "next/link"
 import { ChevronLeft, Save, ClipboardList, Plus, Trash2, Search, ArrowRightCircle } from "lucide-react"
 
 const TAX_TYPES = [{ value: "taxed", label: "含稅（外加5%）" }, { value: "included", label: "含稅（內含）" }, { value: "tax_free", label: "免稅" }]
-const STATUS_OPTS = [{ value: "draft", label: "草稿" }, { value: "confirmed", label: "已確認" }, { value: "received", label: "已到貨" }, { value: "cancelled", label: "已取消" }]
+const STATUS_OPTS = [{ value: "ordered", label: "已下單" }, { value: "paid", label: "已匯款" }, { value: "received", label: "已進貨" }, { value: "cancelled", label: "已取消" }]
 const EMPTY_ITEM = { product_code: "", product_name: "", unit: "", quantity: 1, unit_price: 0, discount: 100, amount: 0, notes: "" }
 
-function genNo() {
-  const d = new Date()
-  const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`
-  return `PO${ymd}${String(Math.floor(Math.random() * 900) + 100)}`
+// 依「選擇的日期」向 server 取下一個單號（YYYYMMDD + 4 位序號）
+async function fetchNextNo(date) {
+  try {
+    const res = await fetch(`/api/order-no?type=purchase_orders&date=${encodeURIComponent(date)}`)
+    const data = await res.json()
+    return data.no || ""
+  } catch { return "" }
 }
 
 export default function PurchaseForm() {
@@ -21,7 +24,7 @@ export default function PurchaseForm() {
   const isNew = id === "new"
   const today = new Date().toISOString().split("T")[0]
 
-  const [form, setForm] = useState({ po_no: genNo(), vendor_name: "", po_date: today, expected_date: "", status: "draft", tax_type: "taxed", subtotal: 0, tax_amount: 0, total: 0, notes: "" })
+  const [form, setForm] = useState({ po_no: "", vendor_name: "", po_date: today, expected_date: "", status: "draft", tax_type: "taxed", subtotal: 0, tax_amount: 0, total: 0, notes: "" })
   const [items, setItems] = useState([{ ...EMPTY_ITEM }])
   const [vendors, setVendors] = useState([])
   const [products, setProducts] = useState([])
@@ -46,6 +49,14 @@ export default function PurchaseForm() {
     }
   }, [id, isNew])
 
+  // 新增模式：依「採購日期」自動產生單號（日期變動時重新產生）
+  useEffect(() => {
+    if (!isNew || !form.po_date) return
+    fetchNextNo(form.po_date).then(no => {
+      if (no) setForm(f => ({ ...f, po_no: no }))
+    })
+  }, [isNew, form.po_date])
+
   const calcTotals = useCallback((itemList, taxType) => {
     const subtotal = itemList.reduce((s, it) => s + (Number(it.amount) || 0), 0)
     let tax = taxType === "taxed" ? Math.round(subtotal * 0.05) : 0
@@ -69,7 +80,10 @@ export default function PurchaseForm() {
   const addItem = () => setItems(prev => [...prev, { ...EMPTY_ITEM }])
   const removeItem = (i) => setItems(prev => { const u = prev.filter((_, idx) => idx !== i); setForm(f => ({ ...f, ...calcTotals(u, f.tax_type) })); return u })
   const pickVendor = (v) => { setForm(f => ({ ...f, vendor_name: v.short_name, vendor_id: v.id })); setShowVendorList(false) }
+  const [justPicked, setJustPicked] = useState(false)
   const pickProduct = (product, index) => {
+    setJustPicked(true)
+    setTimeout(() => setJustPicked(false), 300)
     setItems(prev => {
       const updated = prev.map((item, i) => {
         if (i !== index) return item
@@ -106,8 +120,8 @@ export default function PurchaseForm() {
     else { setError(data.error || "轉單失敗") }
   }
 
-  const filteredVendors = vendors.filter(v => v.short_name?.includes(vendorQ) || v.code?.includes(vendorQ)).slice(0, 8)
-  const filteredProducts = products.filter(p => p.name?.includes(productSearch) || p.code?.includes(productSearch)).slice(0, 10)
+  const filteredVendors = vendors.filter(v => { const q = vendorQ.toLowerCase(); return v.short_name?.toLowerCase().includes(q) || v.code?.toLowerCase().includes(q) }).slice(0, 8)
+  const filteredProducts = productSearch.trim() ? products.filter(p => { const q = productSearch.toLowerCase(); return p.name?.toLowerCase().includes(q) || p.code?.toLowerCase().includes(q) }).slice(0, 10) : []
   const inputCls = "w-full px-3 py-2 text-lg border border-gray-300 rounded-xl focus:outline-none focus:border-green-500"
 
   if (loading) return <div className="min-h-screen bg-gray-100 flex items-center justify-center text-xl text-gray-400">載入中...</div>
@@ -177,6 +191,32 @@ export default function PurchaseForm() {
             <button onClick={addItem} className="flex items-center gap-1.5 px-4 py-2 bg-green-50 text-green-700 text-base font-semibold rounded-lg hover:bg-green-100">
               <Plus size={16} /> 新增行</button>
           </div>
+          {showProductPicker !== null && (
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl relative z-20" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-sm font-semibold text-green-700">搜尋商品（第 {showProductPicker + 1} 行）</span>
+                <Link href="/products/new" target="_blank" className="text-sm text-blue-500 hover:text-blue-700 font-semibold">＋ 新增品項</Link>
+                <button type="button" onClick={() => setShowProductPicker(null)} className="text-sm text-gray-400 hover:text-red-400">✕ 關閉</button>
+              </div>
+              <div className="relative mb-2">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                <input value={productSearch} onChange={e => setProductSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 text-base border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-green-500" placeholder="輸入品號或品名搜尋..." autoFocus />
+              </div>
+              {filteredProducts.length > 0 && (
+                <div className="bg-white rounded-lg border border-gray-200 divide-y divide-gray-100 max-h-60 overflow-y-auto">
+                  {filteredProducts.map(p => (
+                    <div key={p.id} onClick={() => pickProduct(p, showProductPicker)}
+                      className="w-full px-4 py-2.5 text-left hover:bg-green-100 flex items-center gap-4 cursor-pointer transition-colors">
+                      <span className="font-mono text-gray-500 w-32 shrink-0">{p.code}</span>
+                      <span className="flex-1 text-base">{p.name}</span>
+                      <span className="text-green-700 font-semibold">${p.cost_price || p.retail_price}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
           <div className="overflow-x-auto">
             <table className="w-full text-base">
               <thead><tr className="bg-gray-50 text-gray-500">
@@ -187,31 +227,9 @@ export default function PurchaseForm() {
                   <tr key={idx} className="hover:bg-green-50/30">
                     <td className="px-3 py-2 text-gray-400">{idx + 1}</td>
                     <td className="px-3 py-2 w-32">
-                      <div className="relative">
-                        <input value={item.product_code} onChange={e => updateItem(idx, "product_code", e.target.value)}
-                          onFocus={() => { setShowProductPicker(idx); setProductSearch(item.product_code) }}
-                          className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500" placeholder="品號" />
-                        {showProductPicker === idx && (
-                          <div className="absolute z-20 left-0 mt-1 w-72 bg-white border border-gray-200 rounded-xl shadow-lg">
-                            <div className="p-2 border-b"><div className="relative">
-                              <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                              <input value={productSearch} onChange={e => setProductSearch(e.target.value)}
-                                className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-200 rounded-lg" placeholder="搜尋商品..." autoFocus />
-                            </div></div>
-                            <div className="max-h-40 overflow-y-auto">
-                              {filteredProducts.map(p => (
-                                <button key={p.id} type="button" onClick={() => pickProduct(p, idx)}
-                                  className="w-full px-3 py-2 text-left text-sm hover:bg-green-50 flex gap-2">
-                                  <span className="font-mono text-gray-400 w-20">{p.code}</span>
-                                  <span className="flex-1">{p.name}</span>
-                                  <span className="text-green-700">${p.cost_price || p.retail_price}</span>
-                                </button>
-                              ))}
-                            </div>
-                            <button onClick={() => setShowProductPicker(null)} className="w-full p-2 text-sm text-gray-400 border-t">關閉</button>
-                          </div>
-                        )}
-                      </div>
+                      <input value={item.product_code}
+                        onClick={() => { if (!justPicked) { setShowProductPicker(idx); setProductSearch("") } }}
+                        className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500 cursor-pointer" placeholder="點擊搜尋商品" readOnly />
                     </td>
                     <td className="px-3 py-2"><input value={item.product_name} onChange={e => updateItem(idx, "product_name", e.target.value)} className="w-full px-2 py-1.5 border border-gray-200 rounded-lg focus:outline-none" placeholder="品名" /></td>
                     <td className="px-3 py-2 w-16"><input value={item.unit} onChange={e => updateItem(idx, "unit", e.target.value)} className="w-full px-2 py-1.5 border border-gray-200 rounded-lg" /></td>
