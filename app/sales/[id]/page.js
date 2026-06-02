@@ -53,7 +53,25 @@ export default function SalesForm() {
     status: "draft", tax_type: "taxed", payment_method: "", subtotal: 0, tax_amount: 0, total: 0, quote_no: "", notes: "",
     invoice_type: "", invoice_no: "", invoice_date: "", invoice_url: "",
     ship_to_name: "", ship_to_tax_id: "", ship_to_phone: "", ship_to_address: "",
+    delivery_method: "",
   })
+
+  // 配送方式選項
+  const FACTORY_ADDRESS = "709台南市安南區工業三路85號"
+  const DELIVERY_METHODS = [
+    { value: "", label: "請選擇" },
+    { value: "工廠自取", label: "工廠自取" },
+    { value: "公司專車", label: "公司專車" },
+    { value: "翔駿貨運", label: "翔駿貨運" },
+  ]
+  const handleDeliveryMethodChange = (value) => {
+    setForm(f => {
+      const next = { ...f, delivery_method: value }
+      // 工廠自取 → 自動帶入工廠地址 (覆蓋現有)
+      if (value === "工廠自取") next.ship_to_address = FACTORY_ADDRESS
+      return next
+    })
+  }
   const [invoiceLoading, setInvoiceLoading] = useState(false)
   const [items, setItems] = useState([{ ...EMPTY_ITEM }])
   const [customers, setCustomers] = useState([])
@@ -327,10 +345,19 @@ export default function SalesForm() {
                 placeholder={selectedCustomer?.phone || selectedCustomer?.mobile || "—"} className={inputCls} />
             </div>
             <div>
+              <label className="block text-base font-semibold text-gray-600 mb-1">配送方式</label>
+              <select value={form.delivery_method || ""} onChange={e => handleDeliveryMethodChange(e.target.value)} className={`${inputCls} bg-white`}>
+                {DELIVERY_METHODS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            <div className="md:col-span-2">
               <label className="block text-base font-semibold text-gray-600 mb-1">送貨地址</label>
               <input value={form.ship_to_address || ""} onChange={e => setForm(f => ({ ...f, ship_to_address: e.target.value }))}
                 placeholder={[selectedCustomer?.delivery_zip, selectedCustomer?.delivery_city, selectedCustomer?.delivery_district, selectedCustomer?.delivery_address].filter(Boolean).join("") || "—"}
                 className={inputCls} />
+              {form.delivery_method === "工廠自取" && (
+                <p className="mt-1 text-sm text-blue-600">已自動帶入工廠地址，可手動調整</p>
+              )}
             </div>
           </div>
         </section>

@@ -114,6 +114,7 @@ export default function SalesPrintPage() {
         <div>統一編號：{order.ship_to_tax_id || customer?.tax_id || "—"}</div>
         <div>聯絡電話：{order.ship_to_phone || customer?.phone || customer?.mobile || "—"}</div>
         <div>送貨地址：{order.ship_to_address || (customer ? [customer.delivery_zip, customer.delivery_city, customer.delivery_district, customer.delivery_address].filter(Boolean).join("") : "") || "—"}</div>
+        {order.delivery_method && <div>配送方式：{order.delivery_method}</div>}
         <div>{showPrice && order.invoice_no ? `發票號碼：${order.invoice_no}` : ""}</div>
         {showPrice && order.invoice_type && <div>發票聯式：{order.invoice_type}</div>}
         {order.payment_method && <div>付款方式：{{"bank_transfer":"銀行匯款","credit_card":"信用卡","line_pay":"LINE Pay","monthly":"月結（經銷商）","cash":"現金","other":"其他"}[order.payment_method] || order.payment_method}</div>}
