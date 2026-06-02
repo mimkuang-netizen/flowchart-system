@@ -22,6 +22,9 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const pathname = usePathname()
 
+  // 公開頁面 (給客戶看的) 不要顯示後台側邊欄
+  if (pathname?.startsWith("/v/") || pathname === "/login") return null
+
   const isActive = (href) => {
     if (href === "/") return pathname === "/"
     return pathname === href || pathname.startsWith(href + "/")
@@ -37,8 +40,8 @@ export default function Sidebar() {
         <div className="flex items-center justify-between px-3 py-3 border-b border-gray-100 shrink-0">
           {!collapsed && (
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center shrink-0">
-                <Icons.Workflow size={18} className="text-white" />
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-cyan-500 rounded-lg flex items-center justify-center shrink-0 shadow-sm">
+                <Icons.Boxes size={18} className="text-white" />
               </div>
               <span className="text-base font-bold text-gray-800 truncate">冠毅進銷存</span>
             </Link>
