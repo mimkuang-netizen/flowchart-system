@@ -316,6 +316,18 @@ export default function QuotationPrint() {
           {data.account_number && <p>帳號：{data.account_number}</p>}
         </div>
 
+        {/* ====== 客戶回簽 (已簽過才顯示) ====== */}
+        {data.signed_at && data.signature_data && (
+          <div className="mt-4 border-2 border-green-300 bg-green-50 rounded-xl p-3">
+            <p className="text-sm text-green-700 font-bold mb-2">
+              ✓ 客戶已於 {new Date(data.signed_at).toLocaleString("zh-TW")} 完成回簽
+              {data.signer_name && ` — 簽收人：${data.signer_name}`}
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={data.signature_data} alt="客戶簽收章" className="max-h-28 bg-white border border-gray-200 rounded" />
+          </div>
+        )}
+
         {/* ====== 底部簽章 ====== */}
         <div className="flex justify-between mt-8 text-sm">
           <p className="text-gray-500">確認採購請蓋章/回簽</p>
