@@ -110,19 +110,19 @@ export default function SalesForm() {
 
   const calcTotals = useCallback((itemList, taxType) => {
     const sum = itemList.reduce((s, it) => s + (Number(it.amount) || 0), 0)
+    // 一律四捨五入到整數 (subtotal/tax/total 不留小數)
     if (taxType === "included") {
-      // 含稅內含：明細金額是「含稅價」→ 反推未稅 = sum/1.05、稅 = sum - 未稅
+      const total = Math.round(sum)
       const subtotal = Math.round(sum / 1.05)
-      const tax = sum - subtotal
-      return { subtotal, tax_amount: tax, total: sum }
+      return { subtotal, tax_amount: total - subtotal, total }
     }
     if (taxType === "taxed") {
-      // 外加 5%：明細金額是「未稅」→ 稅 = 未稅*5%、總計 = 未稅+稅
-      const tax = Math.round(sum * 0.05)
-      return { subtotal: sum, tax_amount: tax, total: sum + tax }
+      const subtotal = Math.round(sum)
+      const tax = Math.round(subtotal * 0.05)
+      return { subtotal, tax_amount: tax, total: subtotal + tax }
     }
-    // 免稅
-    return { subtotal: sum, tax_amount: 0, total: sum }
+    const subtotal = Math.round(sum)
+    return { subtotal, tax_amount: 0, total: subtotal }
   }, [])
 
   const updateItem = (index, field, value) => {
