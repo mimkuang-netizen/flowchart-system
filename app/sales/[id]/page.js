@@ -51,6 +51,7 @@ export default function SalesForm() {
     order_no: "", customer_name: "", order_date: today, delivery_date: "",
     status: "draft", tax_type: "taxed", payment_method: "", subtotal: 0, tax_amount: 0, total: 0, quote_no: "", notes: "",
     invoice_type: "", invoice_no: "", invoice_date: "", invoice_url: "",
+    ship_to_name: "", ship_to_tax_id: "", ship_to_phone: "", ship_to_address: "",
   })
   const [invoiceLoading, setInvoiceLoading] = useState(false)
   const [items, setItems] = useState([{ ...EMPTY_ITEM }])
@@ -130,7 +131,21 @@ export default function SalesForm() {
   const removeItem = (i) => setItems(prev => { const u = prev.filter((_, idx) => idx !== i); setForm(f => ({ ...f, ...calcTotals(u, f.tax_type) })); return u })
 
   const [selectedCustomer, setSelectedCustomer] = useState(null)
-  const pickCustomer = (c) => { setForm(f => ({ ...f, customer_name: c.short_name, customer_id: c.id, payment_method: c.default_payment_method || f.payment_method || "" })); setSelectedCustomer(c); setShowCustomerList(false) }
+  const pickCustomer = (c) => {
+    setForm(f => ({
+      ...f,
+      customer_name: c.short_name,
+      customer_id: c.id,
+      payment_method: c.default_payment_method || f.payment_method || "",
+      // 送貨/開立資訊：若目前是空才從客戶主檔帶入 (避免蓋掉手改)
+      ship_to_name: f.ship_to_name || c.full_name || "",
+      ship_to_tax_id: f.ship_to_tax_id || c.tax_id || "",
+      ship_to_phone: f.ship_to_phone || c.phone || c.mobile || "",
+      ship_to_address: f.ship_to_address || [c.delivery_zip, c.delivery_city, c.delivery_district, c.delivery_address].filter(Boolean).join("") || "",
+    }))
+    setSelectedCustomer(c)
+    setShowCustomerList(false)
+  }
 
   // 快速新增客戶：用目前輸入的字當預設簡稱
   const openQuickAdd = () => {
@@ -281,35 +296,30 @@ export default function SalesForm() {
               </select>
             </div>
           </div>
-          {/* 客戶送貨資訊 */}
-          {selectedCustomer && (
-            <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-base font-semibold text-gray-600 mb-1">公司名稱</label>
-                <div className="px-4 py-2.5 bg-gray-50 text-lg rounded-xl border border-gray-200 text-gray-700">
-                  {selectedCustomer.full_name || "—"}
-                </div>
-              </div>
-              <div>
-                <label className="block text-base font-semibold text-gray-600 mb-1">統一編號</label>
-                <div className="px-4 py-2.5 bg-gray-50 text-lg rounded-xl border border-gray-200 text-gray-700">
-                  {selectedCustomer.tax_id || "—"}
-                </div>
-              </div>
-              <div>
-                <label className="block text-base font-semibold text-gray-600 mb-1">聯絡電話</label>
-                <div className="px-4 py-2.5 bg-gray-50 text-lg rounded-xl border border-gray-200 text-gray-700">
-                  {selectedCustomer.phone || selectedCustomer.mobile || "—"}
-                </div>
-              </div>
-              <div>
-                <label className="block text-base font-semibold text-gray-600 mb-1">送貨地址</label>
-                <div className="px-4 py-2.5 bg-gray-50 text-lg rounded-xl border border-gray-200 text-gray-700">
-                  {[selectedCustomer.delivery_zip, selectedCustomer.delivery_city, selectedCustomer.delivery_district, selectedCustomer.delivery_address].filter(Boolean).join("") || "—"}
-                </div>
-              </div>
+          {/* 客戶送貨資訊（可編輯，選客戶時自動帶入主檔資料當預設）*/}
+          <div className="mt-4 pt-4 border-t border-gray-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-base font-semibold text-gray-600 mb-1">公司名稱</label>
+              <input value={form.ship_to_name || ""} onChange={e => setForm(f => ({ ...f, ship_to_name: e.target.value }))}
+                placeholder={selectedCustomer?.full_name || "—"} className={inputCls} />
             </div>
-          )}
+            <div>
+              <label className="block text-base font-semibold text-gray-600 mb-1">統一編號</label>
+              <input value={form.ship_to_tax_id || ""} onChange={e => setForm(f => ({ ...f, ship_to_tax_id: e.target.value }))}
+                placeholder={selectedCustomer?.tax_id || "—"} className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-base font-semibold text-gray-600 mb-1">聯絡電話</label>
+              <input value={form.ship_to_phone || ""} onChange={e => setForm(f => ({ ...f, ship_to_phone: e.target.value }))}
+                placeholder={selectedCustomer?.phone || selectedCustomer?.mobile || "—"} className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-base font-semibold text-gray-600 mb-1">送貨地址</label>
+              <input value={form.ship_to_address || ""} onChange={e => setForm(f => ({ ...f, ship_to_address: e.target.value }))}
+                placeholder={[selectedCustomer?.delivery_zip, selectedCustomer?.delivery_city, selectedCustomer?.delivery_district, selectedCustomer?.delivery_address].filter(Boolean).join("") || "—"}
+                className={inputCls} />
+            </div>
+          </div>
         </section>
 
         {/* 商品明細 */}

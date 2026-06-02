@@ -110,8 +110,10 @@ export default function SalesPrintPage() {
         <div>銷貨單號：<b>{order.order_no}</b></div>
         <div>銷貨日期：{order.order_date}</div>
         <div>客戶名稱：<b>{order.customer_name}</b></div>
-        <div>聯絡電話：{customer?.phone || customer?.mobile || "—"}</div>
-        <div>送貨地址：{customer ? [customer.delivery_zip, customer.delivery_city, customer.delivery_district, customer.delivery_address].filter(Boolean).join("") || "—" : "—"}</div>
+        <div>公司名稱：{order.ship_to_name || customer?.full_name || "—"}</div>
+        <div>統一編號：{order.ship_to_tax_id || customer?.tax_id || "—"}</div>
+        <div>聯絡電話：{order.ship_to_phone || customer?.phone || customer?.mobile || "—"}</div>
+        <div>送貨地址：{order.ship_to_address || (customer ? [customer.delivery_zip, customer.delivery_city, customer.delivery_district, customer.delivery_address].filter(Boolean).join("") : "") || "—"}</div>
         <div>{showPrice && order.invoice_no ? `發票號碼：${order.invoice_no}` : ""}</div>
         {showPrice && order.invoice_type && <div>發票聯式：{order.invoice_type}</div>}
         {order.payment_method && <div>付款方式：{{"bank_transfer":"銀行匯款","credit_card":"信用卡","line_pay":"LINE Pay","monthly":"月結（經銷商）","cash":"現金","other":"其他"}[order.payment_method] || order.payment_method}</div>}
