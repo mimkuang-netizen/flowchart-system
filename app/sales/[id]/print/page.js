@@ -15,23 +15,58 @@ export default function SalesPrintPage() {
   const [copied, setCopied] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [showPrice, setShowPrice] = useState(searchParams.get("showPrice") !== "false")
+  const [shareUrl, setShareUrl] = useState("")
   const action = searchParams.get("action")
 
-  const handleCopyLink = async () => {
+  // 頁面載入時就先取 share token，避免按按鈕時因失焦失敗
+  useEffect(() => {
+    if (!id) return
+    fetch("/api/share-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type: "sales", id }),
+    })
+      .then(r => r.json())
+      .then(j => { if (j.token) setShareUrl(`${window.location.origin}/v/${j.token}`) })
+      .catch(() => {})
+  }, [id])
+
+  const copyToClipboard = async (text) => {
     try {
-      const res = await fetch("/api/share-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "sales", id }),
-      })
-      const j = await res.json()
-      if (!res.ok || !j.token) throw new Error(j.error || "產生連結失敗")
-      const shareUrl = `${window.location.origin}/v/${j.token}`
-      await navigator.clipboard.writeText(shareUrl)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch (e) {
-      alert("複製失敗：" + e.message)
+      if (navigator.clipboard && document.hasFocus()) {
+        await navigator.clipboard.writeText(text); return true
+      }
+    } catch {}
+    try {
+      const ta = document.createElement("textarea")
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0"
+      document.body.appendChild(ta); ta.focus(); ta.select()
+      const ok = document.execCommand("copy")
+      document.body.removeChild(ta); return ok
+    } catch { return false }
+  }
+
+  const handleCopyLink = async () => {
+    let url = shareUrl
+    if (!url) {
+      try {
+        const res = await fetch("/api/share-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "sales", id }),
+        })
+        const j = await res.json()
+        if (!j.token) throw new Error(j.error || "產生連結失敗")
+        url = `${window.location.origin}/v/${j.token}`
+        setShareUrl(url)
+      } catch (e) { alert("產生連結失敗：" + e.message); return }
+    }
+    window.focus()
+    const ok = await copyToClipboard(url)
+    if (ok) {
+      setCopied(true); setTimeout(() => setCopied(false), 2000)
+    } else {
+      prompt("自動複製失敗，請手動複製：", url)
     }
   }
 
