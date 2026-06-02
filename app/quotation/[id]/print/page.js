@@ -13,12 +13,22 @@ export default function QuotationPrint() {
   const [downloading, setDownloading] = useState(false)
   const action = searchParams.get("action")
 
-  const handleCopyLink = () => {
-    const url = `${window.location.origin}/quotation/${id}/print`
-    navigator.clipboard.writeText(url).then(() => {
+  const handleCopyLink = async () => {
+    try {
+      const res = await fetch("/api/share-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "quotation", id }),
+      })
+      const j = await res.json()
+      if (!res.ok || !j.token) throw new Error(j.error || "產生連結失敗")
+      const url = `${window.location.origin}/v/${j.token}`
+      await navigator.clipboard.writeText(url)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    })
+    } catch (e) {
+      alert("複製失敗：" + e.message)
+    }
   }
 
   const handleDownloadPDF = async () => {
