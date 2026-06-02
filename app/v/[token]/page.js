@@ -92,14 +92,14 @@ export default function PublicShareView() {
         body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; background: #f3f4f6; }
       `}</style>
 
-      <div className="no-print fixed top-4 right-4 flex gap-2 z-50">
+      <div className="no-print fixed top-2 right-2 sm:top-4 sm:right-4 flex gap-2 z-50">
         <button onClick={() => window.print()}
-          className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 shadow-lg">
-          <Printer size={18} /> 列印
+          className="flex items-center gap-1 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-orange-500 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl hover:bg-orange-600 shadow-lg">
+          <Printer size={16} /> 列印
         </button>
         <button onClick={handleDownloadPDF} disabled={downloading}
-          className="flex items-center gap-2 px-5 py-2.5 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 shadow-lg disabled:opacity-50">
-          <Download size={18} /> {downloading ? "下載中..." : "下載 PDF"}
+          className="flex items-center gap-1 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-blue-500 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl hover:bg-blue-600 shadow-lg disabled:opacity-50">
+          <Download size={16} /> {downloading ? "下載中..." : "下載 PDF"}
         </button>
       </div>
 
@@ -111,64 +111,90 @@ export default function PublicShareView() {
 /* ====== 簽名 / 收發章區塊 (只用於報價單) ====== */
 function SignatureSection({ token, signed_at, signature_data, signer_name, onSigned }) {
   const canvasRef = useRef(null)
-  const [drawing, setDrawing] = useState(false)
+  const drawingRef = useRef(false)  // 用 ref 不用 state 避免 re-render
   const [hasDrawn, setHasDrawn] = useState(false)
   const [name, setName] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
-  const [mode, setMode] = useState("sign")  // 'sign' | 'upload'
+  const [mode, setMode] = useState("sign")
 
   // 已簽 → 顯示 readonly
   if (signed_at) {
     return (
-      <div className="mt-8 border-2 border-green-200 bg-green-50 rounded-2xl p-5">
-        <div className="flex items-center gap-2 mb-3 text-green-700 font-bold">
+      <div className="mt-6 sm:mt-8 border-2 border-green-200 bg-green-50 rounded-2xl p-4 sm:p-5">
+        <div className="flex items-center gap-2 mb-3 text-green-700 font-bold text-sm sm:text-base">
           <Check size={20} /> 已於 {new Date(signed_at).toLocaleString("zh-TW")} 完成回簽
         </div>
-        {signer_name && <p className="text-base text-gray-600 mb-2">簽收人：{signer_name}</p>}
+        {signer_name && <p className="text-sm sm:text-base text-gray-600 mb-2">簽收人：{signer_name}</p>}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        {signature_data && <img src={signature_data} alt="簽收章/簽名" className="max-h-40 bg-white border border-gray-200 rounded" />}
+        {signature_data && <img src={signature_data} alt="簽收章/簽名" className="max-h-32 sm:max-h-40 bg-white border border-gray-200 rounded" />}
       </div>
     )
   }
 
-  const initCanvas = (cvs) => {
+  // 只在 mount 時初始化 canvas，避免 re-render 清掉內容
+  useEffect(() => {
+    const cvs = canvasRef.current
     if (!cvs) return
-    canvasRef.current = cvs
-    const dpr = window.devicePixelRatio || 1
-    const rect = cvs.getBoundingClientRect()
-    cvs.width = rect.width * dpr
-    cvs.height = rect.height * dpr
-    const ctx = cvs.getContext("2d")
-    ctx.scale(dpr, dpr)
-    ctx.strokeStyle = "#1e3a8a"
-    ctx.lineWidth = 2.5
-    ctx.lineCap = "round"
-    ctx.lineJoin = "round"
-  }
+    const setupCanvas = () => {
+      const dpr = window.devicePixelRatio || 1
+      const rect = cvs.getBoundingClientRect()
+      cvs.width = rect.width * dpr
+      cvs.height = rect.height * dpr
+      const ctx = cvs.getContext("2d")
+      ctx.scale(dpr, dpr)
+      ctx.strokeStyle = "#1e3a8a"
+      ctx.lineWidth = 2.5
+      ctx.lineCap = "round"
+      ctx.lineJoin = "round"
+    }
+    setupCanvas()
 
-  const getXY = (e) => {
-    const rect = canvasRef.current.getBoundingClientRect()
-    const t = e.touches?.[0] || e
-    return { x: t.clientX - rect.left, y: t.clientY - rect.top }
-  }
+    // 用 native event listener + passive:false 才能 preventDefault 阻止頁面滾動
+    const getXY = (e) => {
+      const rect = cvs.getBoundingClientRect()
+      const t = e.touches?.[0] || e
+      return { x: t.clientX - rect.left, y: t.clientY - rect.top }
+    }
+    const onStart = (e) => {
+      e.preventDefault()
+      drawingRef.current = true
+      const { x, y } = getXY(e)
+      const ctx = cvs.getContext("2d")
+      ctx.beginPath(); ctx.moveTo(x, y)
+      // 點一下也算 (沒拖也算簽過了)
+      ctx.lineTo(x + 0.01, y + 0.01); ctx.stroke()
+      setHasDrawn(true)
+    }
+    const onMove = (e) => {
+      if (!drawingRef.current) return
+      e.preventDefault()
+      const { x, y } = getXY(e)
+      const ctx = cvs.getContext("2d")
+      ctx.lineTo(x, y); ctx.stroke()
+    }
+    const onEnd = () => { drawingRef.current = false }
 
-  const startDraw = (e) => {
-    e.preventDefault()
-    const { x, y } = getXY(e)
-    const ctx = canvasRef.current.getContext("2d")
-    ctx.beginPath(); ctx.moveTo(x, y)
-    setDrawing(true)
-  }
-  const moveDraw = (e) => {
-    if (!drawing) return
-    e.preventDefault()
-    const { x, y } = getXY(e)
-    const ctx = canvasRef.current.getContext("2d")
-    ctx.lineTo(x, y); ctx.stroke()
-    setHasDrawn(true)
-  }
-  const endDraw = () => setDrawing(false)
+    cvs.addEventListener("mousedown", onStart)
+    cvs.addEventListener("mousemove", onMove)
+    cvs.addEventListener("mouseup", onEnd)
+    cvs.addEventListener("mouseleave", onEnd)
+    cvs.addEventListener("touchstart", onStart, { passive: false })
+    cvs.addEventListener("touchmove", onMove, { passive: false })
+    cvs.addEventListener("touchend", onEnd)
+    cvs.addEventListener("touchcancel", onEnd)
+
+    return () => {
+      cvs.removeEventListener("mousedown", onStart)
+      cvs.removeEventListener("mousemove", onMove)
+      cvs.removeEventListener("mouseup", onEnd)
+      cvs.removeEventListener("mouseleave", onEnd)
+      cvs.removeEventListener("touchstart", onStart)
+      cvs.removeEventListener("touchmove", onMove)
+      cvs.removeEventListener("touchend", onEnd)
+      cvs.removeEventListener("touchcancel", onEnd)
+    }
+  }, [mode])  // mode 變化時重設 (切換 sign/upload 時)
 
   const clearCanvas = () => {
     const cvs = canvasRef.current
@@ -188,11 +214,12 @@ function SignatureSection({ token, signed_at, signature_data, signer_name, onSig
       img.onload = () => {
         const cvs = canvasRef.current
         const ctx = cvs.getContext("2d")
+        const dpr = window.devicePixelRatio || 1
+        const cwLogical = cvs.width / dpr, chLogical = cvs.height / dpr
         ctx.clearRect(0, 0, cvs.width, cvs.height)
-        const cw = cvs.width, ch = cvs.height
-        const ratio = Math.min(cw / img.width, ch / img.height) * 0.9
+        const ratio = Math.min(cwLogical / img.width, chLogical / img.height) * 0.9
         const w = img.width * ratio, h = img.height * ratio
-        ctx.drawImage(img, (cw - w) / 2 / (window.devicePixelRatio || 1), (ch - h) / 2 / (window.devicePixelRatio || 1), w / (window.devicePixelRatio || 1), h / (window.devicePixelRatio || 1))
+        ctx.drawImage(img, (cwLogical - w) / 2, (chLogical - h) / 2, w, h)
         setHasDrawn(true)
       }
       img.src = reader.result
@@ -219,23 +246,23 @@ function SignatureSection({ token, signed_at, signature_data, signer_name, onSig
   }
 
   return (
-    <div className="no-print mt-8 border-2 border-orange-200 bg-orange-50 rounded-2xl p-5">
-      <h3 className="text-lg font-bold text-orange-700 mb-3 flex items-center gap-2">
-        <PenLine size={20} /> 客戶回簽
+    <div className="no-print mt-6 sm:mt-8 border-2 border-orange-200 bg-orange-50 rounded-2xl p-4 sm:p-5">
+      <h3 className="text-base sm:text-lg font-bold text-orange-700 mb-3 flex items-center gap-2">
+        <PenLine size={18} /> 客戶回簽
       </h3>
       <div className="flex gap-2 mb-3">
         <button onClick={() => setMode("sign")}
-          className={`px-4 py-1.5 rounded-lg text-sm font-semibold ${mode === "sign" ? "bg-orange-500 text-white" : "bg-white border border-gray-300 text-gray-700"}`}>
+          className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold ${mode === "sign" ? "bg-orange-500 text-white" : "bg-white border border-gray-300 text-gray-700"}`}>
           手寫簽名
         </button>
         <button onClick={() => setMode("upload")}
-          className={`px-4 py-1.5 rounded-lg text-sm font-semibold ${mode === "upload" ? "bg-orange-500 text-white" : "bg-white border border-gray-300 text-gray-700"}`}>
-          上傳印章圖片
+          className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold ${mode === "upload" ? "bg-orange-500 text-white" : "bg-white border border-gray-300 text-gray-700"}`}>
+          上傳印章
         </button>
       </div>
 
       {mode === "sign" ? (
-        <p className="text-sm text-gray-500 mb-2">請於下方框內用滑鼠或手指簽名</p>
+        <p className="text-xs sm:text-sm text-gray-500 mb-2">在下方白色區域用手指或滑鼠簽名</p>
       ) : (
         <div className="mb-2">
           <label className="inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-dashed border-orange-300 rounded-lg text-sm font-semibold text-orange-600 cursor-pointer hover:bg-orange-50">
@@ -246,22 +273,20 @@ function SignatureSection({ token, signed_at, signature_data, signer_name, onSig
       )}
 
       <canvas
-        ref={initCanvas}
-        className="w-full h-40 bg-white border-2 border-gray-300 rounded-lg touch-none cursor-crosshair"
-        style={{ touchAction: "none" }}
-        onMouseDown={startDraw} onMouseMove={moveDraw} onMouseUp={endDraw} onMouseLeave={endDraw}
-        onTouchStart={startDraw} onTouchMove={moveDraw} onTouchEnd={endDraw}
+        ref={canvasRef}
+        className="w-full h-44 sm:h-48 bg-white border-2 border-gray-300 rounded-lg cursor-crosshair select-none"
+        style={{ touchAction: "none", WebkitUserSelect: "none", userSelect: "none" }}
       />
 
-      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="mt-3 flex flex-col sm:flex-row gap-2 sm:gap-3">
         <input value={name} onChange={e => setName(e.target.value)} placeholder="簽收人姓名 (選填)"
-          className="px-3 py-2 border border-gray-300 rounded-lg text-base" />
+          className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-base" />
         <div className="flex gap-2 justify-end">
-          <button onClick={clearCanvas} className="flex items-center gap-1 px-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50">
+          <button onClick={clearCanvas} className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50">
             <Eraser size={14} /> 清除
           </button>
           <button onClick={submit} disabled={submitting || !hasDrawn}
-            className="flex items-center gap-1 px-5 py-2 bg-orange-500 text-white rounded-lg text-sm font-semibold hover:bg-orange-600 disabled:opacity-50">
+            className="flex-1 sm:flex-none flex items-center justify-center gap-1 px-5 py-2 bg-orange-500 text-white rounded-lg text-sm font-semibold hover:bg-orange-600 disabled:opacity-50">
             <Check size={14} /> {submitting ? "送出中..." : "確認簽收"}
           </button>
         </div>
@@ -279,32 +304,33 @@ function QuotationView({ data, token, onSigned }) {
   const money = (n) => Number(n || 0).toLocaleString()
 
   return (
-    <div id="share-print-content" className="max-w-[210mm] mx-auto bg-white p-8 my-4" style={{ fontSize: "13px", lineHeight: 1.6 }}>
-      <div className="flex justify-between items-start mb-1">
-        <div>
-          <h1 className="text-2xl font-bold tracking-wider">冠毅國際有限公司</h1>
-          <div className="mt-1 text-sm text-gray-600 space-y-0.5">
+    <div id="share-print-content" className="max-w-[210mm] mx-auto bg-white p-4 sm:p-8 my-2 sm:my-4 text-[13px] sm:text-[13px]" style={{ lineHeight: 1.6 }}>
+      <div className="flex justify-between items-start gap-2 mb-1">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-2xl font-bold tracking-wider">冠毅國際有限公司</h1>
+          <div className="mt-1 text-[11px] sm:text-sm text-gray-600 space-y-0.5">
             <p>電　話：06-3841619</p>
             <p>傳　真：06-3841026</p>
             <p>地　址：709台南市安南區工業三路85號</p>
           </div>
         </div>
-        <div className="flex flex-col items-end">
-          <h2 className="text-3xl font-bold tracking-widest text-gray-800">報價單</h2>
-          <p className="text-sm text-gray-400 mt-1">頁次：1/1</p>
+        <div className="flex flex-col items-end shrink-0">
+          <h2 className="text-xl sm:text-3xl font-bold tracking-widest text-gray-800">報價單</h2>
+          <p className="text-xs sm:text-sm text-gray-400 mt-1">頁次：1/1</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="" className="mt-2" style={{ height: "50px", objectFit: "contain" }} />
+          <img src="/logo.png" alt="" className="mt-2 h-8 sm:h-12 object-contain" />
         </div>
       </div>
-      <hr className="border-t-2 border-gray-800 my-3" />
-      <div className="grid grid-cols-2 gap-x-8 gap-y-1 mb-4 text-sm">
+      <hr className="border-t-2 border-gray-800 my-2 sm:my-3" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 mb-3 sm:mb-4 text-xs sm:text-sm">
         <div className="flex"><span className="text-gray-500 w-20 shrink-0">客戶名稱：</span><span className="font-semibold">{data.customer_name}</span></div>
         <div className="flex"><span className="text-gray-500 w-20 shrink-0">報價單號：</span><span className="font-mono">{data.quote_no}</span></div>
         <div className="flex"><span className="text-gray-500 w-20 shrink-0">業　　務：</span><span>{data.sales_person || "劉冠儀"}</span></div>
         <div className="flex"><span className="text-gray-500 w-20 shrink-0">報價日期：</span><span>{fmt(data.quote_date)}</span></div>
         <div className="flex"><span className="text-gray-500 w-20 shrink-0">有效日期：</span><span>{fmt(data.valid_until)}</span></div>
       </div>
-      <table className="w-full border-collapse text-sm">
+      <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+      <table className="w-full border-collapse text-xs sm:text-sm min-w-[600px]">
         <thead><tr className="bg-gray-100">
           <th className="border border-gray-300 px-2 py-1.5 text-left w-24">品號</th>
           <th className="border border-gray-300 px-2 py-1.5 text-left">品名/商品描述</th>
@@ -331,17 +357,18 @@ function QuotationView({ data, token, onSigned }) {
           ))}
         </tbody>
       </table>
-      <div className="flex justify-between mt-1">
-        <div className="flex-1 border border-gray-300 px-3 py-2 text-sm">
+      </div>
+      <div className="flex flex-col sm:flex-row justify-between mt-1">
+        <div className="flex-1 border border-gray-300 px-3 py-2 text-xs sm:text-sm">
           <span className="text-gray-500">備註：</span><span>{data.notes || ""}</span>
         </div>
-        <div className="w-52 border border-gray-300 border-l-0">
+        <div className="w-full sm:w-52 border border-gray-300 sm:border-l-0 text-xs sm:text-sm">
           <div className="flex justify-between px-3 py-1 border-b border-gray-200"><span className="text-gray-500">合計金額</span><span className="font-semibold">{money(data.subtotal)}</span></div>
           <div className="flex justify-between px-3 py-1 border-b border-gray-200"><span className="text-gray-500">稅　額</span><span className="font-semibold">{money(data.tax_amount)}</span></div>
           <div className="flex justify-between px-3 py-1.5 bg-gray-50 font-bold"><span>總金額</span><span className="text-orange-600">{money(data.total)}</span></div>
         </div>
       </div>
-      <div className="mt-4 border border-gray-300 px-4 py-3 text-sm">
+      <div className="mt-4 border border-gray-300 px-4 py-3 text-xs sm:text-sm">
         <p className="font-bold mb-1">條款及細則：</p>
         {data.payment_deadline && <p>1. 付款期限：{data.payment_deadline}</p>}
         {data.payment_method && <p>2. 付款條件：{data.payment_method}。</p>}
