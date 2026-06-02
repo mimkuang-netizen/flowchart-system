@@ -34,6 +34,8 @@ export async function PUT(request, { params }) {
   const body = await request.json()
   const { items, ...rawHeader } = body
   delete rawHeader.id; delete rawHeader.created_at; delete rawHeader.receiving_order_items
+  // vendor_id 是 UUID 但 DB 欄位是 bigint，schema 不對齊 → 丟棄
+  delete rawHeader.vendor_id
   const header = sanitizeEmpty(rawHeader)
 
   // Fetch current order status BEFORE updating (for stock adjustment "only once" check)

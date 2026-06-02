@@ -29,6 +29,8 @@ export async function POST(request) {
   if (authErr) return authErr
   const body = await request.json()
   const { items, ...rawHeader } = body
+  // customer_id 是 UUID 但 DB 欄位是 bigint，schema 不對齊 → 丟棄
+  delete rawHeader.customer_id
   const header = sanitizeEmpty(rawHeader)
   // 統一單號：YYYYMMDD + 4 位序號，依 order_date 計算
   header.order_no = await ensureOrderNo(supabase, 'sales_orders', header.order_date, header.order_no)
@@ -37,7 +39,11 @@ export async function POST(request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   if (items && items.length > 0) {
-    const rows = items.map((item, i) => ({ ...item, order_id: order.id, sort_order: i }))
+    const rows = items.map((item, i) => {
+      const r = { ...item, order_id: order.id, sort_order: i }
+      delete r.id; delete r.product_id  // product_id 同樣 UUID/bigint 不對齊
+      return r
+    })
     const { error: itemErr } = await supabase.from('sales_order_items').insert(rows)
     if (itemErr) return NextResponse.json({ error: itemErr.message }, { status: 500 })
   }

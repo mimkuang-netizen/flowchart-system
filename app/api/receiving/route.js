@@ -36,6 +36,8 @@ export async function POST(request) {
   if (authErr) return authErr
   const body = await request.json()
   const { items, ...rawHeader } = body
+  // vendor_id 是 UUID 但 DB 欄位是 bigint，schema 不對齊 → 丟棄
+  delete rawHeader.vendor_id
   const header = sanitizeEmpty(rawHeader)
   // 統一單號：YYYYMMDD + 4 位序號，依 receipt_date 計算
   header.receipt_no = await ensureOrderNo(supabase, 'receiving_orders', header.receipt_date, header.receipt_no)
