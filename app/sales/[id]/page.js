@@ -63,6 +63,11 @@ export default function SalesForm() {
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
+  // 快速新增客戶 modal
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
+  const [quickAddData, setQuickAddData] = useState({ short_name: "", code: "", full_name: "", phone: "", contact: "" })
+  const [quickAddSaving, setQuickAddSaving] = useState(false)
+  const [quickAddError, setQuickAddError] = useState("")
 
   useEffect(() => {
     fetch("/api/customers").then(r => r.json()).then(d => setCustomers(Array.isArray(d) ? d : []))
@@ -126,6 +131,37 @@ export default function SalesForm() {
 
   const [selectedCustomer, setSelectedCustomer] = useState(null)
   const pickCustomer = (c) => { setForm(f => ({ ...f, customer_name: c.short_name, customer_id: c.id, payment_method: c.default_payment_method || f.payment_method || "" })); setSelectedCustomer(c); setShowCustomerList(false) }
+
+  // 快速新增客戶：用目前輸入的字當預設簡稱
+  const openQuickAdd = () => {
+    setQuickAddData({ short_name: customerQ || form.customer_name || "", code: "", full_name: "", phone: "", contact: "" })
+    setQuickAddError("")
+    setShowQuickAdd(true)
+    setShowCustomerList(false)
+  }
+  const submitQuickAdd = async () => {
+    if (!quickAddData.short_name.trim()) { setQuickAddError("請填寫客戶簡稱"); return }
+    setQuickAddSaving(true); setQuickAddError("")
+    try {
+      const payload = {}
+      Object.entries(quickAddData).forEach(([k, v]) => { if (v && v.trim()) payload[k] = v.trim() })
+      const res = await fetch("/api/customers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "新增失敗")
+      // 加進清單 + 自動選取
+      setCustomers(prev => [...prev, data])
+      pickCustomer(data)
+      setShowQuickAdd(false)
+    } catch (e) {
+      setQuickAddError(e.message)
+    } finally {
+      setQuickAddSaving(false)
+    }
+  }
   const pickProduct = (product, index) => {
     setItems(prev => {
       const updated = prev.map((item, i) => {
@@ -205,8 +241,8 @@ export default function SalesForm() {
               <input value={form.customer_name}
                 onChange={e => { setForm(f => ({ ...f, customer_name: e.target.value })); setCustomerQ(e.target.value); setShowCustomerList(true) }}
                 onFocus={() => setShowCustomerList(true)} placeholder="輸入客戶名稱或代號" className={inputCls} />
-              {showCustomerList && filteredCustomers.length > 0 && (
-                <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+              {showCustomerList && (filteredCustomers.length > 0 || customerQ) && (
+                <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
                   {filteredCustomers.map(c => (
                     <button key={c.id} type="button" onClick={() => pickCustomer(c)}
                       className="w-full px-4 py-2.5 text-left text-base hover:bg-orange-50 flex gap-3">
@@ -214,6 +250,11 @@ export default function SalesForm() {
                       <span className="font-semibold">{c.short_name}</span>
                     </button>
                   ))}
+                  <button type="button" onClick={openQuickAdd}
+                    className="w-full px-4 py-2.5 text-left text-base hover:bg-green-50 text-green-700 font-semibold border-t border-gray-100 flex items-center gap-2">
+                    <span className="text-lg">＋</span>
+                    新增客戶{customerQ ? ` 「${customerQ}」` : ""}
+                  </button>
                 </div>
               )}
             </div>
@@ -463,6 +504,55 @@ export default function SalesForm() {
       </main>
       {(showCustomerList || showProductPicker !== null) && (
         <div className="fixed inset-0 z-10" onClick={() => { setShowCustomerList(false); setShowProductPicker(null) }} />
+      )}
+
+      {/* 快速新增客戶 Modal */}
+      {showQuickAdd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowQuickAdd(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-gray-800 mb-4">快速新增客戶</h3>
+            {quickAddError && (
+              <div className="mb-3 px-4 py-2.5 bg-red-50 border border-red-200 text-red-700 text-base rounded-xl">{quickAddError}</div>
+            )}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-base font-semibold text-gray-600 mb-1"><span className="text-red-500 mr-1">*</span>客戶簡稱</label>
+                <input value={quickAddData.short_name} onChange={e => setQuickAddData(d => ({ ...d, short_name: e.target.value }))}
+                  className="w-full px-3 py-2 text-lg border border-gray-300 rounded-xl focus:outline-none focus:border-orange-400" placeholder="例：阿明" />
+              </div>
+              <div>
+                <label className="block text-base font-semibold text-gray-600 mb-1">客戶代號（選填）</label>
+                <input value={quickAddData.code} onChange={e => setQuickAddData(d => ({ ...d, code: e.target.value }))}
+                  className="w-full px-3 py-2 text-lg border border-gray-300 rounded-xl focus:outline-none focus:border-orange-400" placeholder="例：MIM" />
+              </div>
+              <div>
+                <label className="block text-base font-semibold text-gray-600 mb-1">公司全名（選填）</label>
+                <input value={quickAddData.full_name} onChange={e => setQuickAddData(d => ({ ...d, full_name: e.target.value }))}
+                  className="w-full px-3 py-2 text-lg border border-gray-300 rounded-xl focus:outline-none focus:border-orange-400" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-base font-semibold text-gray-600 mb-1">電話（選填）</label>
+                  <input value={quickAddData.phone} onChange={e => setQuickAddData(d => ({ ...d, phone: e.target.value }))}
+                    className="w-full px-3 py-2 text-lg border border-gray-300 rounded-xl focus:outline-none focus:border-orange-400" />
+                </div>
+                <div>
+                  <label className="block text-base font-semibold text-gray-600 mb-1">聯絡人（選填）</label>
+                  <input value={quickAddData.contact} onChange={e => setQuickAddData(d => ({ ...d, contact: e.target.value }))}
+                    className="w-full px-3 py-2 text-lg border border-gray-300 rounded-xl focus:outline-none focus:border-orange-400" />
+                </div>
+              </div>
+              <p className="text-sm text-gray-400 pt-1">其他完整資料之後到「客戶資料」頁面補</p>
+            </div>
+            <div className="flex justify-end gap-3 mt-5">
+              <button onClick={() => setShowQuickAdd(false)} className="px-5 py-2.5 border-2 border-gray-200 text-base rounded-xl hover:bg-gray-50">取消</button>
+              <button onClick={submitQuickAdd} disabled={quickAddSaving}
+                className="px-5 py-2.5 bg-orange-500 text-white text-base font-semibold rounded-xl hover:bg-orange-600 disabled:opacity-50">
+                {quickAddSaving ? "新增中..." : "新增並選取"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
