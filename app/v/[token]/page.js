@@ -7,9 +7,9 @@
  * 故意不顯示「冠毅進銷存」、編輯連結、後台 breadcrumb 等等
  * 讓客戶無法回推系統結構。
  */
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useParams } from "next/navigation"
-import { Printer, Download } from "lucide-react"
+import { Printer, Download, Eraser, Upload, Check, PenLine } from "lucide-react"
 
 export default function PublicShareView() {
   const { token } = useParams()
@@ -103,13 +103,177 @@ export default function PublicShareView() {
         </button>
       </div>
 
-      {type === 'quotation' ? <QuotationView data={data} /> : <SalesView data={data} />}
+      {type === 'quotation' ? <QuotationView data={data} token={token} onSigned={(updated) => setData(d => ({ ...d, ...updated }))} /> : <SalesView data={data} />}
     </>
   )
 }
 
+/* ====== 簽名 / 收發章區塊 (只用於報價單) ====== */
+function SignatureSection({ token, signed_at, signature_data, signer_name, onSigned }) {
+  const canvasRef = useRef(null)
+  const [drawing, setDrawing] = useState(false)
+  const [hasDrawn, setHasDrawn] = useState(false)
+  const [name, setName] = useState("")
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState("")
+  const [mode, setMode] = useState("sign")  // 'sign' | 'upload'
+
+  // 已簽 → 顯示 readonly
+  if (signed_at) {
+    return (
+      <div className="mt-8 border-2 border-green-200 bg-green-50 rounded-2xl p-5">
+        <div className="flex items-center gap-2 mb-3 text-green-700 font-bold">
+          <Check size={20} /> 已於 {new Date(signed_at).toLocaleString("zh-TW")} 完成回簽
+        </div>
+        {signer_name && <p className="text-base text-gray-600 mb-2">簽收人：{signer_name}</p>}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {signature_data && <img src={signature_data} alt="簽收章/簽名" className="max-h-40 bg-white border border-gray-200 rounded" />}
+      </div>
+    )
+  }
+
+  const initCanvas = (cvs) => {
+    if (!cvs) return
+    canvasRef.current = cvs
+    const dpr = window.devicePixelRatio || 1
+    const rect = cvs.getBoundingClientRect()
+    cvs.width = rect.width * dpr
+    cvs.height = rect.height * dpr
+    const ctx = cvs.getContext("2d")
+    ctx.scale(dpr, dpr)
+    ctx.strokeStyle = "#1e3a8a"
+    ctx.lineWidth = 2.5
+    ctx.lineCap = "round"
+    ctx.lineJoin = "round"
+  }
+
+  const getXY = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect()
+    const t = e.touches?.[0] || e
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top }
+  }
+
+  const startDraw = (e) => {
+    e.preventDefault()
+    const { x, y } = getXY(e)
+    const ctx = canvasRef.current.getContext("2d")
+    ctx.beginPath(); ctx.moveTo(x, y)
+    setDrawing(true)
+  }
+  const moveDraw = (e) => {
+    if (!drawing) return
+    e.preventDefault()
+    const { x, y } = getXY(e)
+    const ctx = canvasRef.current.getContext("2d")
+    ctx.lineTo(x, y); ctx.stroke()
+    setHasDrawn(true)
+  }
+  const endDraw = () => setDrawing(false)
+
+  const clearCanvas = () => {
+    const cvs = canvasRef.current
+    if (!cvs) return
+    const ctx = cvs.getContext("2d")
+    ctx.clearRect(0, 0, cvs.width, cvs.height)
+    setHasDrawn(false)
+  }
+
+  const handleUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 1024 * 1024) { setError("檔案需 1MB 以下"); return }
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new window.Image()
+      img.onload = () => {
+        const cvs = canvasRef.current
+        const ctx = cvs.getContext("2d")
+        ctx.clearRect(0, 0, cvs.width, cvs.height)
+        const cw = cvs.width, ch = cvs.height
+        const ratio = Math.min(cw / img.width, ch / img.height) * 0.9
+        const w = img.width * ratio, h = img.height * ratio
+        ctx.drawImage(img, (cw - w) / 2 / (window.devicePixelRatio || 1), (ch - h) / 2 / (window.devicePixelRatio || 1), w / (window.devicePixelRatio || 1), h / (window.devicePixelRatio || 1))
+        setHasDrawn(true)
+      }
+      img.src = reader.result
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const submit = async () => {
+    if (!hasDrawn) { setError("請先簽名或上傳印章"); return }
+    setSubmitting(true); setError("")
+    try {
+      const dataUrl = canvasRef.current.toDataURL("image/png")
+      const res = await fetch(`/api/share-resource/${token}/sign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ signature_data: dataUrl, signer_name: name }),
+      })
+      const j = await res.json()
+      if (!res.ok) throw new Error(j.error || "送出失敗")
+      onSigned({ signed_at: j.signed_at, signature_data: dataUrl, signer_name: name })
+    } catch (e) {
+      setError(e.message)
+    } finally { setSubmitting(false) }
+  }
+
+  return (
+    <div className="no-print mt-8 border-2 border-orange-200 bg-orange-50 rounded-2xl p-5">
+      <h3 className="text-lg font-bold text-orange-700 mb-3 flex items-center gap-2">
+        <PenLine size={20} /> 客戶回簽
+      </h3>
+      <div className="flex gap-2 mb-3">
+        <button onClick={() => setMode("sign")}
+          className={`px-4 py-1.5 rounded-lg text-sm font-semibold ${mode === "sign" ? "bg-orange-500 text-white" : "bg-white border border-gray-300 text-gray-700"}`}>
+          手寫簽名
+        </button>
+        <button onClick={() => setMode("upload")}
+          className={`px-4 py-1.5 rounded-lg text-sm font-semibold ${mode === "upload" ? "bg-orange-500 text-white" : "bg-white border border-gray-300 text-gray-700"}`}>
+          上傳印章圖片
+        </button>
+      </div>
+
+      {mode === "sign" ? (
+        <p className="text-sm text-gray-500 mb-2">請於下方框內用滑鼠或手指簽名</p>
+      ) : (
+        <div className="mb-2">
+          <label className="inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-dashed border-orange-300 rounded-lg text-sm font-semibold text-orange-600 cursor-pointer hover:bg-orange-50">
+            <Upload size={16} /> 選擇印章圖片 (PNG/JPG, 1MB 內)
+            <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
+          </label>
+        </div>
+      )}
+
+      <canvas
+        ref={initCanvas}
+        className="w-full h-40 bg-white border-2 border-gray-300 rounded-lg touch-none cursor-crosshair"
+        style={{ touchAction: "none" }}
+        onMouseDown={startDraw} onMouseMove={moveDraw} onMouseUp={endDraw} onMouseLeave={endDraw}
+        onTouchStart={startDraw} onTouchMove={moveDraw} onTouchEnd={endDraw}
+      />
+
+      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="簽收人姓名 (選填)"
+          className="px-3 py-2 border border-gray-300 rounded-lg text-base" />
+        <div className="flex gap-2 justify-end">
+          <button onClick={clearCanvas} className="flex items-center gap-1 px-4 py-2 border-2 border-gray-300 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50">
+            <Eraser size={14} /> 清除
+          </button>
+          <button onClick={submit} disabled={submitting || !hasDrawn}
+            className="flex items-center gap-1 px-5 py-2 bg-orange-500 text-white rounded-lg text-sm font-semibold hover:bg-orange-600 disabled:opacity-50">
+            <Check size={14} /> {submitting ? "送出中..." : "確認簽收"}
+          </button>
+        </div>
+      </div>
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+      <p className="mt-2 text-xs text-gray-400">送出後即代表確認接受本報價，無法再次修改。</p>
+    </div>
+  )
+}
+
 // ====== 報價單顯示 ======
-function QuotationView({ data }) {
+function QuotationView({ data, token, onSigned }) {
   const items = (data.quotation_items || []).sort((a, b) => a.sort_order - b.sort_order)
   const fmt = (d) => d ? new Date(d).toLocaleDateString("zh-TW") : "—"
   const money = (n) => Number(n || 0).toLocaleString()
@@ -189,6 +353,27 @@ function QuotationView({ data }) {
         <p className="text-gray-500">確認採購請蓋章/回簽</p>
         <p className="text-gray-500 font-semibold">感謝惠顧！</p>
       </div>
+
+      {/* 已簽完顯示在文件內 (列印也帶) */}
+      {data.signed_at && data.signature_data && (
+        <div className="mt-4 border-2 border-green-300 bg-green-50 rounded-xl p-4 print:border print:bg-white">
+          <p className="text-sm text-green-700 font-bold mb-2">
+            已於 {new Date(data.signed_at).toLocaleString("zh-TW")} 完成回簽
+            {data.signer_name && ` — 簽收人：${data.signer_name}`}
+          </p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={data.signature_data} alt="簽收章" className="max-h-32" />
+        </div>
+      )}
+
+      {/* 簽名區塊 (沒簽過才顯示，列印時隱藏) */}
+      <SignatureSection
+        token={token}
+        signed_at={data.signed_at}
+        signature_data={data.signature_data}
+        signer_name={data.signer_name}
+        onSigned={onSigned}
+      />
     </div>
   )
 }
