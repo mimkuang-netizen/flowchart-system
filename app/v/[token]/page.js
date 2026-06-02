@@ -118,22 +118,10 @@ function SignatureSection({ token, signed_at, signature_data, signer_name, onSig
   const [error, setError] = useState("")
   const [mode, setMode] = useState("sign")
 
-  // 已簽 → 顯示 readonly
-  if (signed_at) {
-    return (
-      <div className="mt-6 sm:mt-8 border-2 border-green-200 bg-green-50 rounded-2xl p-4 sm:p-5">
-        <div className="flex items-center gap-2 mb-3 text-green-700 font-bold text-sm sm:text-base">
-          <Check size={20} /> 已於 {new Date(signed_at).toLocaleString("zh-TW")} 完成回簽
-        </div>
-        {signer_name && <p className="text-sm sm:text-base text-gray-600 mb-2">簽收人：{signer_name}</p>}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        {signature_data && <img src={signature_data} alt="簽收章/簽名" className="max-h-32 sm:max-h-40 bg-white border border-gray-200 rounded" />}
-      </div>
-    )
-  }
-
   // 只在 mount 時初始化 canvas，避免 re-render 清掉內容
+  // ⚠️ Hooks 必須在任何 conditional return 之前呼叫
   useEffect(() => {
+    if (signed_at) return  // 已簽不需初始化 canvas
     const cvs = canvasRef.current
     if (!cvs) return
     const setupCanvas = () => {
@@ -194,7 +182,21 @@ function SignatureSection({ token, signed_at, signature_data, signer_name, onSig
       cvs.removeEventListener("touchend", onEnd)
       cvs.removeEventListener("touchcancel", onEnd)
     }
-  }, [mode])  // mode 變化時重設 (切換 sign/upload 時)
+  }, [mode, signed_at])  // mode/signed_at 變化時重設
+
+  // 已簽 → 顯示 readonly (必須在所有 hooks 之後)
+  if (signed_at) {
+    return (
+      <div className="mt-6 sm:mt-8 border-2 border-green-200 bg-green-50 rounded-2xl p-4 sm:p-5">
+        <div className="flex items-center gap-2 mb-3 text-green-700 font-bold text-sm sm:text-base">
+          <Check size={20} /> 已於 {new Date(signed_at).toLocaleString("zh-TW")} 完成回簽
+        </div>
+        {signer_name && <p className="text-sm sm:text-base text-gray-600 mb-2">簽收人：{signer_name}</p>}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {signature_data && <img src={signature_data} alt="簽收章/簽名" className="max-h-32 sm:max-h-40 bg-white border border-gray-200 rounded" />}
+      </div>
+    )
+  }
 
   const clearCanvas = () => {
     const cvs = canvasRef.current
