@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, Save, FileText, Plus, Trash2, Search, X, Building2, ArrowRightCircle } from "lucide-react"
+import QuickAddProductModal from "@/app/_components/QuickAddProductModal"
 
 const TAX_TYPES = [
   { value: "taxed", label: "含稅（外加5%）" },
@@ -34,7 +35,7 @@ async function fetchNextNo(date) {
 }
 
 /* ====== 商品選擇彈窗 ====== */
-function ProductPickerModal({ products, onPick, onClose }) {
+function ProductPickerModal({ products, onPick, onClose, onAddNew }) {
   const [search, setSearch] = useState("")
   const inputRef = useRef(null)
 
@@ -44,6 +45,9 @@ function ProductPickerModal({ products, onPick, onClose }) {
     const s = search.toLowerCase()
     return p.name?.toLowerCase().includes(s) || p.code?.toLowerCase().includes(s)
   }).slice(0, 50)
+
+  // 暴露 search 字串給外層用
+  ProductPickerModal._lastSearch = search
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
@@ -97,8 +101,14 @@ function ProductPickerModal({ products, onPick, onClose }) {
           )}
         </div>
 
-        <div className="px-5 py-3 border-t bg-gray-50 text-sm text-gray-400">
-          顯示 {filtered.length} 筆商品，共 {products.length} 筆
+        <div className="px-5 py-3 border-t bg-gray-50 text-sm text-gray-400 flex items-center justify-between">
+          <span>顯示 {filtered.length} 筆商品，共 {products.length} 筆</span>
+          {onAddNew && (
+            <button onClick={() => onAddNew(search)}
+              className="px-4 py-1.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700">
+              ＋ 快速新增商品
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -140,6 +150,9 @@ export default function QuotationForm() {
   const [quickAddData, setQuickAddData] = useState({ short_name: "", code: "", full_name: "", phone: "", contact: "" })
   const [quickAddSaving, setQuickAddSaving] = useState(false)
   const [quickAddError, setQuickAddError] = useState("")
+  // 快速新增商品
+  const [showQuickAddProd, setShowQuickAddProd] = useState(false)
+  const [quickAddProdDefault, setQuickAddProdDefault] = useState("")
 
   useEffect(() => {
     fetch("/api/customers").then(r => r.json()).then(d => setCustomers(Array.isArray(d) ? d : []))
@@ -584,8 +597,21 @@ export default function QuotationForm() {
           products={products}
           onPick={(p) => pickProduct(p, showProductPicker)}
           onClose={() => setShowProductPicker(null)}
+          onAddNew={(searchText) => { setQuickAddProdDefault(searchText || ""); setShowQuickAddProd(true) }}
         />
       )}
+
+      <QuickAddProductModal
+        open={showQuickAddProd}
+        defaultName={quickAddProdDefault}
+        accentColor="orange"
+        onClose={() => setShowQuickAddProd(false)}
+        onCreated={(p) => {
+          setProducts(prev => [...prev, p])
+          if (showProductPicker !== null) pickProduct(p, showProductPicker)
+          setShowProductPicker(null)
+        }}
+      />
 
       {/* 點擊空白關閉客戶下拉 */}
       {showCustomerList && (

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, Save, PackageCheck, Plus, Trash2, Search } from "lucide-react"
+import QuickAddProductModal from "@/app/_components/QuickAddProductModal"
 
 const EMPTY_ITEM = { product_code: "", product_name: "", unit: "", quantity: 1, unit_price: 0, amount: 0, notes: "" }
 
@@ -34,6 +35,9 @@ export default function ReceivingForm() {
   const [quickAddData, setQuickAddData] = useState({ short_name: "", code: "", full_name: "", phone: "", contact: "" })
   const [quickAddSaving, setQuickAddSaving] = useState(false)
   const [quickAddError, setQuickAddError] = useState("")
+  // 快速新增商品
+  const [showQuickAddProd, setShowQuickAddProd] = useState(false)
+  const [quickAddProdRowIdx, setQuickAddProdRowIdx] = useState(null)
   const [showProductPicker, setShowProductPicker] = useState(null)
   const [loading, setLoading] = useState(!isNew)
   const [saving, setSaving] = useState(false)
@@ -205,7 +209,8 @@ export default function ReceivingForm() {
             <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl relative z-20" onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-sm font-semibold text-green-700">搜尋商品（第 {showProductPicker + 1} 行）</span>
-                <Link href="/products/new" target="_blank" className="text-sm text-blue-500 hover:text-blue-700 font-semibold">＋ 新增品項</Link>
+                <button type="button" onClick={() => { setQuickAddProdRowIdx(showProductPicker); setShowQuickAddProd(true) }}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-semibold">＋ 快速新增商品</button>
                 <button type="button" onClick={() => setShowProductPicker(null)} className="text-sm text-gray-400 hover:text-red-400">✕ 關閉</button>
               </div>
               <div className="relative mb-2">
@@ -292,6 +297,18 @@ export default function ReceivingForm() {
         </div>
       </main>
       {(showVendorList || showProductPicker !== null) && <div className="fixed inset-0 z-10" onClick={() => { setShowVendorList(false); setShowProductPicker(null) }} />}
+
+      <QuickAddProductModal
+        open={showQuickAddProd}
+        defaultName={productSearch}
+        accentColor="green"
+        onClose={() => setShowQuickAddProd(false)}
+        onCreated={(p) => {
+          setProducts(prev => [...prev, p])
+          if (quickAddProdRowIdx !== null) pickProduct(p, quickAddProdRowIdx)
+          setShowProductPicker(null)
+        }}
+      />
 
       {/* 快速新增廠商 Modal */}
       {showQuickAdd && (

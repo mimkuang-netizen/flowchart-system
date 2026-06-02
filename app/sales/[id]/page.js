@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import { ChevronLeft, Save, ShoppingCart, Plus, Trash2, Search, Printer, FileText, ExternalLink, Loader2, Package } from "lucide-react"
+import QuickAddProductModal from "@/app/_components/QuickAddProductModal"
 
 const TAX_TYPES = [
   { value: "taxed", label: "含稅（外加5%）" },
@@ -69,6 +70,9 @@ export default function SalesForm() {
   const [quickAddData, setQuickAddData] = useState({ short_name: "", code: "", full_name: "", phone: "", contact: "" })
   const [quickAddSaving, setQuickAddSaving] = useState(false)
   const [quickAddError, setQuickAddError] = useState("")
+  // 快速新增商品
+  const [showQuickAddProd, setShowQuickAddProd] = useState(false)
+  const [quickAddProdRowIdx, setQuickAddProdRowIdx] = useState(null)
 
   useEffect(() => {
     fetch("/api/customers").then(r => r.json()).then(d => setCustomers(Array.isArray(d) ? d : []))
@@ -380,7 +384,11 @@ export default function SalesForm() {
                               ))}
                               {filteredProducts.length === 0 && <p className="px-4 py-3 text-gray-400 text-sm">無符合商品</p>}
                             </div>
-                            <button onClick={() => setShowProductPicker(null)} className="w-full p-2 text-sm text-gray-400 hover:bg-gray-50 border-t">關閉</button>
+                            <div className="border-t flex">
+                              <button type="button" onClick={() => { setQuickAddProdRowIdx(idx); setShowQuickAddProd(true) }}
+                                className="flex-1 p-2 text-sm text-blue-600 hover:bg-blue-50 font-semibold">＋ 快速新增商品</button>
+                              <button onClick={() => setShowProductPicker(null)} className="px-3 p-2 text-sm text-gray-400 hover:bg-gray-50 border-l">關閉</button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -515,6 +523,18 @@ export default function SalesForm() {
       {(showCustomerList || showProductPicker !== null) && (
         <div className="fixed inset-0 z-10" onClick={() => { setShowCustomerList(false); setShowProductPicker(null) }} />
       )}
+
+      <QuickAddProductModal
+        open={showQuickAddProd}
+        defaultName={productSearch}
+        accentColor="orange"
+        onClose={() => setShowQuickAddProd(false)}
+        onCreated={(p) => {
+          setProducts(prev => [...prev, p])
+          if (quickAddProdRowIdx !== null) pickProduct(p, quickAddProdRowIdx)
+          setShowProductPicker(null)
+        }}
+      />
 
       {/* 快速新增客戶 Modal */}
       {showQuickAdd && (
