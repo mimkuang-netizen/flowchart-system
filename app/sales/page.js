@@ -27,12 +27,43 @@ export default function SalesList() {
   const [customerMap, setCustomerMap] = useState({})
   const PAGE_SIZE = 20
 
-  const handleCopyLink = (itemId) => {
-    const url = `${window.location.origin}/sales/${itemId}/print`
-    navigator.clipboard.writeText(url).then(() => {
-      setCopiedId(itemId)
-      setTimeout(() => setCopiedId(null), 2000)
-    })
+  const copyToClipboard = async (text) => {
+    try {
+      if (navigator.clipboard && document.hasFocus()) {
+        await navigator.clipboard.writeText(text); return true
+      }
+    } catch {}
+    try {
+      const ta = document.createElement("textarea")
+      ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0"
+      document.body.appendChild(ta); ta.focus(); ta.select()
+      const ok = document.execCommand("copy")
+      document.body.removeChild(ta); return ok
+    } catch { return false }
+  }
+
+  const handleCopyLink = async (itemId) => {
+    try {
+      const res = await fetch("/api/share-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "sales", id: itemId }),
+      })
+      const j = await res.json()
+      if (!j.token) throw new Error(j.error || "產生連結失敗")
+      const base = j.base_url || window.location.origin
+      const url = `${base}/v/${j.token}`
+      window.focus()
+      const ok = await copyToClipboard(url)
+      if (ok) {
+        setCopiedId(itemId)
+        setTimeout(() => setCopiedId(null), 2000)
+      } else {
+        prompt("自動複製失敗，請手動複製：", url)
+      }
+    } catch (e) {
+      alert("複製失敗：" + e.message)
+    }
   }
 
   const SortTh = ({ field, children, className = "" }) => (
