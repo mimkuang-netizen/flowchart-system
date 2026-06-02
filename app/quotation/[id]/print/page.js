@@ -27,22 +27,52 @@ export default function QuotationPrint() {
       const { toPng } = await import("html-to-image")
       const { jsPDF } = await import("jspdf")
       const el = document.getElementById("print-content")
+      // 強制 A4 寬度與置左排版（避免 mx-auto 在較寬視窗造成位移）
+      const A4_W_PX = 794      // ≈ 210mm @ 96dpi
       const origStyle = el.style.cssText
-      el.style.width = "794px"
+      el.style.width = `${A4_W_PX}px`
+      el.style.maxWidth = `${A4_W_PX}px`
       el.style.minHeight = "auto"
+      el.style.margin = "0"
       el.style.padding = "24px"
-      const imgData = await toPng(el, { quality: 1, pixelRatio: 3, backgroundColor: "#ffffff",
-        filter: (node) => !node?.classList?.contains("print:hidden") })
+      el.style.boxSizing = "border-box"
+
+      const imgData = await toPng(el, {
+        quality: 1,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        width: A4_W_PX,                 // 強制畫布寬度
+        height: el.scrollHeight,        // 用實際內容高度
+        filter: (node) => !node?.classList?.contains("print:hidden"),
+      })
       el.style.cssText = origStyle
+
       const img = new Image()
       img.src = imgData
       await new Promise(r => { img.onload = r })
-      const pdfW = 210  // A4 寬
-      const pdfH = (img.height / img.width) * pdfW
-      const pdf = new jsPDF(pdfH > pdfW ? "p" : "l", "mm", [pdfW, Math.max(pdfH, 297)])
-      pdf.addImage(imgData, "PNG", 0, 0, pdfW, pdfH)
-      const fileName = `報價單_${data.quote_no || id}.pdf`
-      pdf.save(fileName)
+
+      // 用標準 A4 portrait，內容超出時自動分頁
+      const pdf = new jsPDF("p", "mm", "a4")
+      const pageW = 210
+      const pageH = 297
+      const imgW = pageW
+      const imgH = (img.height / img.width) * imgW
+
+      if (imgH <= pageH) {
+        pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH)
+      } else {
+        // 多頁：用 addImage 的 yOffset 把圖往上拉，每次顯示一頁高度
+        let remaining = imgH
+        let yOffset = 0
+        while (remaining > 0) {
+          pdf.addImage(imgData, "PNG", 0, -yOffset, imgW, imgH)
+          remaining -= pageH
+          yOffset += pageH
+          if (remaining > 0) pdf.addPage()
+        }
+      }
+
+      pdf.save(`報價單_${data.quote_no || id}.pdf`)
     } catch (e) {
       console.error("PDF download failed:", e)
       alert("PDF 下載失敗：" + e.message)
