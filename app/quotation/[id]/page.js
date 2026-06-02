@@ -181,11 +181,17 @@ export default function QuotationForm() {
   }, [isNew, form.quote_date])
 
   const calcTotals = useCallback((itemList, taxType) => {
-    const subtotal = itemList.reduce((s, item) => s + (Number(item.amount) || 0), 0)
-    let tax = 0
-    if (taxType === "taxed") tax = Math.round(subtotal * 0.05)
-    const total = taxType === "included" ? subtotal : subtotal + tax
-    return { subtotal, tax_amount: tax, total }
+    const sum = itemList.reduce((s, it) => s + (Number(it.amount) || 0), 0)
+    if (taxType === "included") {
+      const subtotal = Math.round(sum / 1.05)
+      const tax = sum - subtotal
+      return { subtotal, tax_amount: tax, total: sum }
+    }
+    if (taxType === "taxed") {
+      const tax = Math.round(sum * 0.05)
+      return { subtotal: sum, tax_amount: tax, total: sum + tax }
+    }
+    return { subtotal: sum, tax_amount: 0, total: sum }
   }, [])
 
   const updateItem = (index, field, value) => {

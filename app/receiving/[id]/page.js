@@ -65,9 +65,17 @@ export default function ReceivingForm() {
   }, [isNew, form.receipt_date])
 
   const calcTotals = useCallback((itemList, taxType) => {
-    const subtotal = itemList.reduce((s, it) => s + (Number(it.amount) || 0), 0)
-    const tax = taxType === "taxed" ? Math.round(subtotal * 0.05) : 0
-    return { subtotal, tax_amount: tax, total: taxType === "included" ? subtotal : subtotal + tax }
+    const sum = itemList.reduce((s, it) => s + (Number(it.amount) || 0), 0)
+    if (taxType === "included") {
+      const subtotal = Math.round(sum / 1.05)
+      const tax = sum - subtotal
+      return { subtotal, tax_amount: tax, total: sum }
+    }
+    if (taxType === "taxed") {
+      const tax = Math.round(sum * 0.05)
+      return { subtotal: sum, tax_amount: tax, total: sum + tax }
+    }
+    return { subtotal: sum, tax_amount: 0, total: sum }
   }, [])
 
   const updateItem = (index, field, value) => {
