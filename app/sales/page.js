@@ -2,14 +2,13 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, Plus, Pencil, Trash2, ShoppingCart, ChevronLeft, Printer, RefreshCw, Download, Link2, Check } from "lucide-react"
+import { Search, Plus, Pencil, Trash2, ShoppingCart, ChevronLeft, Printer, Download, Link2, Check, Package } from "lucide-react"
 import { exportToExcel } from "@/lib/exportExcel"
 
 const STATUS_MAP = {
-  draft:     { label: "草稿",   color: "bg-gray-100 text-gray-600" },
-  confirmed: { label: "已確認", color: "bg-blue-100 text-blue-700" },
-  shipped:   { label: "已出貨", color: "bg-orange-100 text-orange-700" },
-  completed: { label: "已完成", color: "bg-green-100 text-green-700" },
+  unpaid:  { label: "未收款",   color: "bg-red-100 text-red-700" },
+  partial: { label: "部分收款", color: "bg-orange-100 text-orange-700" },
+  paid:    { label: "已收款",   color: "bg-green-100 text-green-700" },
 }
 
 export default function SalesList() {
@@ -22,8 +21,6 @@ export default function SalesList() {
   const [page, setPage] = useState(1)
   const [sortKey, setSortKey] = useState("created_at")
   const [sortDir, setSortDir] = useState("desc")
-  const [syncing, setSyncing] = useState(false)
-  const [syncMsg, setSyncMsg] = useState("")
   const [selected, setSelected] = useState(new Set())
   const [copiedId, setCopiedId] = useState(null)
   const [showPrice, setShowPrice] = useState(true)
@@ -78,7 +75,7 @@ export default function SalesList() {
     setLoading(true)
     const params = new URLSearchParams()
     if (q) params.set("q", q)
-    if (status) params.set("status", status)
+    if (status) params.set("payment_status", status)
     const res = await fetch(`/api/sales?${params}`)
     const data = await res.json()
     setItems(Array.isArray(data) ? data : [])
@@ -102,18 +99,6 @@ export default function SalesList() {
     await fetch(`/api/sales/${deleteId}`, { method: "DELETE" })
     setDeleteId(null)
     fetchData()
-  }
-
-  const handleSync = async () => {
-    setSyncing(true); setSyncMsg("")
-    try {
-      const res = await fetch("/api/easystore/sync", { method: "POST" })
-      const data = await res.json()
-      setSyncMsg(data.message || data.error || "同步完成")
-      if (!data.error) fetchData()
-    } catch { setSyncMsg("同步失敗") }
-    setSyncing(false)
-    setTimeout(() => setSyncMsg(""), 5000)
   }
 
   const toggleSelect = (id) => setSelected(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
@@ -151,16 +136,12 @@ export default function SalesList() {
                 { header: "銷貨單號", key: "order_no" },
                 { header: "客戶名稱", key: "customer_name" },
                 { header: "銷貨日期", key: "order_date", format: "date" },
-                { header: "狀態", key: "status" },
+                { header: "付款狀態", key: "payment_status" },
                 { header: "總金額", key: "total", format: "money" },
               ], "銷貨單")}
               className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-base font-semibold rounded-xl hover:bg-gray-50"
             >
               <Download size={18} /> 匯出 Excel
-            </button>
-            <button onClick={handleSync} disabled={syncing}
-              className="flex items-center gap-2 px-4 py-2.5 bg-green-500 text-white text-lg font-semibold rounded-xl hover:bg-green-600 disabled:opacity-50">
-              <RefreshCw size={18} className={syncing ? "animate-spin" : ""} /> {syncing ? "同步中..." : "同步 EasyStore"}
             </button>
             <Link href="/sales/new"
               className="flex items-center gap-2 px-5 py-2.5 bg-orange-500 text-white text-lg font-semibold rounded-xl hover:bg-orange-600">
@@ -177,6 +158,21 @@ export default function SalesList() {
             <button onClick={handleBatchPrint} className="flex items-center gap-1.5 px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">
               <Printer size={14} /> 批次列印
             </button>
+            <select defaultValue="" onChange={async e => {
+              const ps = e.target.value
+              if (!ps) return
+              for (const id of selected) {
+                await fetch(`/api/sales/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ payment_status: ps }) })
+              }
+              e.target.value = ""
+              fetchData()
+            }}
+              className="px-3 py-1.5 text-sm font-semibold border border-orange-300 bg-orange-50 text-orange-700 rounded-lg cursor-pointer">
+              <option value="" disabled>批次改付款狀態</option>
+              <option value="unpaid">未收款</option>
+              <option value="partial">部分收款</option>
+              <option value="paid">已收款</option>
+            </select>
             <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer select-none">
               <input type="checkbox" checked={showPrice} onChange={e => setShowPrice(e.target.checked)} className="w-4 h-4 accent-blue-600" />
               顯示單價
@@ -185,7 +181,6 @@ export default function SalesList() {
           </div>
         </div>
       )}
-      {syncMsg && <div className="max-w-7xl mx-auto px-6 pt-4"><div className="px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-base">{syncMsg}</div></div>}
 
       <main className="max-w-7xl mx-auto px-6 py-6 space-y-5">
         <div className="flex flex-wrap gap-3">
@@ -196,7 +191,7 @@ export default function SalesList() {
           </div>
           <select value={status} onChange={e => setStatus(e.target.value)}
             className="px-4 py-2.5 text-lg border border-gray-300 rounded-xl bg-white focus:outline-none focus:border-orange-400">
-            <option value="">全部狀態</option>
+            <option value="">全部付款狀態</option>
             {Object.entries(STATUS_MAP).map(([v, { label }]) => <option key={v} value={v}>{label}</option>)}
           </select>
           <select value={dateFilter} onChange={e => { setDateFilter(e.target.value); setPage(1) }}
@@ -221,7 +216,6 @@ export default function SalesList() {
                   <SortTh field="customer_name">客戶名稱</SortTh>
                   <th className="px-5 py-4 text-left text-base font-semibold text-gray-500">客戶簡稱</th>
                   <SortTh field="order_date">銷貨日期</SortTh>
-                  <SortTh field="status">狀態</SortTh>
                   <SortTh field="total">總金額</SortTh>
                   <th className="px-5 py-4 text-left text-base font-semibold text-gray-500">操作</th>
                 </tr>
@@ -236,11 +230,6 @@ export default function SalesList() {
                     <td className="px-5 py-4 text-lg">{item.customer_name}</td>
                     <td className="px-5 py-4 text-base text-gray-500">{customerMap[item.customer_name] || "—"}</td>
                     <td className="px-5 py-4 text-base text-gray-500">{formatDate(item.order_date)}</td>
-                    <td className="px-5 py-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-sm font-medium ${(STATUS_MAP[item.status] || STATUS_MAP.draft).color}`}>
-                        {(STATUS_MAP[item.status] || { label: item.status }).label}
-                      </span>
-                    </td>
                     <td className="px-5 py-4 text-lg font-semibold">{formatMoney(item.total)}</td>
                     <td className="px-5 py-4">
                       <div className="flex gap-2">
@@ -249,6 +238,9 @@ export default function SalesList() {
                         </Link>
                         <Link href={`/sales/${item.id}/print?action=download&showPrice=${showPrice}`} target="_blank" className="p-2 text-gray-400 hover:text-purple-500 hover:bg-purple-50 rounded-lg" title="下載 PDF">
                           <Download size={18} />
+                        </Link>
+                        <Link href={`/print/shipping-label/${item.id}`} target="_blank" className="p-2 text-gray-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg" title="列印託運單">
+                          <Package size={18} />
                         </Link>
                         <button onClick={() => handleCopyLink(item.id)} className="p-2 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg" title="複製分享連結">
                           {copiedId === item.id ? <Check size={18} className="text-green-500" /> : <Link2 size={18} />}
