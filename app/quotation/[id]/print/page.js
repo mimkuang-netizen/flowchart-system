@@ -23,7 +23,14 @@ export default function QuotationPrint() {
       body: JSON.stringify({ type: "quotation", id }),
     })
       .then(r => r.json())
-      .then(j => { if (j.token) setShareUrl(`${window.location.origin}/v/${j.token}`) })
+      .then(j => {
+        if (j.token) {
+          // 優先用 server 回傳的 base_url (從環境變數 SHARE_BASE_URL 來)
+          // 沒設定才 fallback 用 window.location.origin
+          const base = j.base_url || window.location.origin
+          setShareUrl(`${base}/v/${j.token}`)
+        }
+      })
       .catch(() => {})
   }, [id])
 
@@ -62,7 +69,8 @@ export default function QuotationPrint() {
         })
         const j = await res.json()
         if (!j.token) throw new Error(j.error || "產生連結失敗")
-        url = `${window.location.origin}/v/${j.token}`
+        const base = j.base_url || window.location.origin
+        url = `${base}/v/${j.token}`
         setShareUrl(url)
       } catch (e) { alert("產生連結失敗：" + e.message); return }
     }

@@ -39,8 +39,10 @@ export async function POST(request) {
     .eq('revoked', false)
     .maybeSingle()
 
+  const baseUrl = process.env.SHARE_BASE_URL || null  // 例：https://s.mim.com.tw
+
   if (existing?.token) {
-    return NextResponse.json({ token: existing.token })
+    return NextResponse.json({ token: existing.token, base_url: baseUrl })
   }
 
   // 否則新建一個 (對 (type, id) 有 UNIQUE 約束，撞 race 也安全)
@@ -52,7 +54,7 @@ export async function POST(request) {
       .insert([{ token, resource_type: type, resource_id: resourceId }])
       .select('token')
       .single()
-    if (!error) return NextResponse.json({ token: data.token })
+    if (!error) return NextResponse.json({ token: data.token, base_url: baseUrl })
     // 若是 UNIQUE (type, id) 衝突 (剛剛被別人建了) → 再撈一次
     const { data: again } = await supabase
       .from('shared_links')
@@ -61,7 +63,7 @@ export async function POST(request) {
       .eq('resource_id', resourceId)
       .eq('revoked', false)
       .maybeSingle()
-    if (again?.token) return NextResponse.json({ token: again.token })
+    if (again?.token) return NextResponse.json({ token: again.token, base_url: baseUrl })
     attempts++
   }
   return NextResponse.json({ error: 'token 產生失敗' }, { status: 500 })

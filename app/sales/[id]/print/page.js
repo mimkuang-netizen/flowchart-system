@@ -27,7 +27,12 @@ export default function SalesPrintPage() {
       body: JSON.stringify({ type: "sales", id }),
     })
       .then(r => r.json())
-      .then(j => { if (j.token) setShareUrl(`${window.location.origin}/v/${j.token}`) })
+      .then(j => {
+        if (j.token) {
+          const base = j.base_url || window.location.origin
+          setShareUrl(`${base}/v/${j.token}`)
+        }
+      })
       .catch(() => {})
   }, [id])
 
@@ -57,7 +62,8 @@ export default function SalesPrintPage() {
         })
         const j = await res.json()
         if (!j.token) throw new Error(j.error || "產生連結失敗")
-        url = `${window.location.origin}/v/${j.token}`
+        const base = j.base_url || window.location.origin
+        url = `${base}/v/${j.token}`
         setShareUrl(url)
       } catch (e) { alert("產生連結失敗：" + e.message); return }
     }
