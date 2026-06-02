@@ -163,12 +163,11 @@ export default function CustomersPage() {
       const customer = customers.find(c => c.id === customerId)
       if (!customer) return
       const currentTags = customer.tags || []
-      if (currentTags.includes(tagName)) return
-      const newTags = [...currentTags, tagName]
+      if (currentTags.length === 1 && currentTags[0] === tagName) return
       await fetch(`/api/customers/${customerId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tags: newTags }),
+        body: JSON.stringify({ tags: [tagName] }),
       })
     })
     await Promise.all(promises)
@@ -186,8 +185,20 @@ export default function CustomersPage() {
   )
 
   const sorted = [...customers].sort((a, b) => {
-    let va = a[sortKey], vb = b[sortKey]
-    if (va == null) va = ""; if (vb == null) vb = ""
+    let va, vb
+    if (sortKey === "tags") {
+      // 標籤排序：依第一個標籤名稱（沒標籤的排到最後）
+      const aTags = Array.isArray(a.tags) ? a.tags : []
+      const bTags = Array.isArray(b.tags) ? b.tags : []
+      va = aTags[0] || ""
+      vb = bTags[0] || ""
+      // 沒標籤的不論升降序都排到最後
+      if (!va && vb) return 1
+      if (va && !vb) return -1
+    } else {
+      va = a[sortKey]; vb = b[sortKey]
+      if (va == null) va = ""; if (vb == null) vb = ""
+    }
     if (typeof va === "string") va = va.toLowerCase()
     if (typeof vb === "string") vb = vb.toLowerCase()
     if (va < vb) return sortDir === "asc" ? -1 : 1
@@ -416,7 +427,7 @@ export default function CustomersPage() {
                   <SortTh field="full_name">公司全名</SortTh>
                   <SortTh field="phone">電話</SortTh>
                   <SortTh field="fax">傳真</SortTh>
-                  <th className="px-4 py-3 text-left text-base font-semibold text-gray-600">標籤</th>
+                  <SortTh field="tags" className="text-gray-600">標籤</SortTh>
                   <th className="px-4 py-3 text-center text-base font-semibold text-gray-600">報價記錄</th>
                   <th className="px-4 py-3 text-center text-base font-semibold text-gray-600">銷貨記錄</th>
                 </tr>

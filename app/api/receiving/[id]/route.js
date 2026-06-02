@@ -42,10 +42,13 @@ export async function PUT(request, { params }) {
 
   const { data, error } = await supabase.from('receiving_orders').update(header).eq('id', id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  await supabase.from('receiving_order_items').delete().eq('receipt_id', id)
-  if (items?.length > 0) {
-    const rows = items.map((item, i) => { const r = sanitizeEmpty({ ...item, receipt_id: Number(id), sort_order: i }); delete r.id; delete r.product_id; return r })
-    await supabase.from('receiving_order_items').insert(rows)
+  // 只在 body 明確傳 items 時才動明細 (例如批次更新狀態時 body 不帶 items，避免誤刪)
+  if (items !== undefined) {
+    await supabase.from('receiving_order_items').delete().eq('receipt_id', id)
+    if (items.length > 0) {
+      const rows = items.map((item, i) => { const r = sanitizeEmpty({ ...item, receipt_id: Number(id), sort_order: i }); delete r.id; delete r.product_id; return r })
+      await supabase.from('receiving_order_items').insert(rows)
+    }
   }
 
   // 自動同步發票到 invoice_statistics（更新時用 upsert by notes 匹配）
