@@ -42,6 +42,8 @@ export const authConfig: NextAuthConfig = {
         '/api/webhooks',     // Phase 3 — LINE / Meta / 其他外部 webhook 必須公開（用 signature 驗章自身保護）
         '/api/cron',         // Phase 3 — Vercel Cron / 手動 polling（用 CRON_SECRET Bearer token 自身保護）
         '/api/easystore/webhook',  // 既有 EasyStore webhook（已 deprecated）
+        '/v/',               // 對外分享連結 (公開，靠 token 自身保護)
+        '/api/share-resource/',  // 對外分享 API (公開，靠 token 自身保護)
       ]
       if (publicPaths.some(p => pathname.startsWith(p))) return true
 
