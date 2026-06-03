@@ -16,6 +16,7 @@ const EMPTY = {
   billing_type: "monthly", billing_days: 0, billing_cutoff_day: 31,
   billing_month_offset: "本月", billing_payment_day: 31,
   collection_type: "monthly", collection_days: 0, collection_monthly_day: 31,
+  default_payment_method: "",
   notes: "", tags: [],
 }
 
@@ -73,7 +74,7 @@ export default function CustomerForm() {
   const toggleTag = (name) => {
     setForm(f => ({
       ...f,
-      tags: f.tags.includes(name) ? f.tags.filter(t => t !== name) : [...f.tags, name]
+      tags: f.tags.includes(name) ? [] : [name]
     }))
   }
 
@@ -145,7 +146,18 @@ export default function CustomerForm() {
               <input value={form.code} onChange={set("code")} maxLength={10} placeholder="最長10碼" className={inputClass} />
             </Field>
             <Field label="客戶簡稱" required>
-              <input value={form.short_name} onChange={set("short_name")} placeholder="建議5個中文字內" className={inputClass} />
+              <input
+                value={form.short_name}
+                onChange={e => {
+                  const v = e.target.value
+                  setForm(f => {
+                    // 新增模式 + 主聯絡人空白或等於舊簡稱 → 同步
+                    const syncContact = isNew && (!f.contact || f.contact === f.short_name)
+                    return { ...f, short_name: v, ...(syncContact ? { contact: v } : {}) }
+                  })
+                }}
+                placeholder="建議5個中文字內" className={inputClass}
+              />
             </Field>
             <Field label="客戶全名">
               <input value={form.full_name} onChange={set("full_name")} className={inputClass} />
@@ -220,6 +232,21 @@ export default function CustomerForm() {
         <section className="bg-white rounded-2xl p-6 shadow-sm">
           <h2 className="text-xl font-bold text-gray-700 mb-5 pb-3 border-b border-gray-100">結帳方式</h2>
           <div className="space-y-6">
+            {/* 預設付款方式 */}
+            <div>
+              <p className="text-base font-semibold text-gray-600 mb-3">預設付款方式</p>
+              <select value={form.default_payment_method || ""} onChange={e => setForm(f => ({ ...f, default_payment_method: e.target.value }))}
+                className={`w-full md:w-1/3 ${inputClass} bg-white`}>
+                <option value="">請選擇</option>
+                <option value="bank_transfer">銀行匯款</option>
+                <option value="credit_card">信用卡</option>
+                <option value="line_pay">LINE Pay</option>
+                <option value="monthly">月結（經銷商）</option>
+                <option value="cash">現金</option>
+                <option value="other">其他</option>
+              </select>
+              <p className="mt-1.5 text-sm text-gray-400">設定後，開銷貨單時會自動帶入此付款方式</p>
+            </div>
             {/* 結帳方式 */}
             <div>
               <p className="text-base font-semibold text-gray-600 mb-3">結帳方式</p>
@@ -355,7 +382,13 @@ export default function CustomerForm() {
               })}
             </div>
             {form.tags.length > 0 && (
-              <p className="mt-3 text-sm text-gray-400">已選：{form.tags.join("、")}</p>
+              <div className="mt-3 flex items-center gap-3">
+                <p className="text-sm text-gray-400">已選：{form.tags.join("、")}</p>
+                <button type="button" onClick={() => setForm(f => ({ ...f, tags: [] }))}
+                  className="px-3 py-1 text-sm text-red-500 border border-red-300 rounded-lg hover:bg-red-50 transition-colors">
+                  清除標籤
+                </button>
+              </div>
             )}
           </section>
         )}
