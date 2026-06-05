@@ -92,7 +92,7 @@ export default function PublicShareView() {
         body { font-family: "Microsoft JhengHei", "PingFang TC", sans-serif; background: #f3f4f6; }
       `}</style>
 
-      <div className="no-print fixed top-2 right-2 sm:top-4 sm:right-4 flex gap-2 z-50">
+      <div className="no-print print:hidden fixed top-2 right-2 sm:top-4 sm:right-4 flex gap-2 z-50">
         <button onClick={() => window.print()}
           className="flex items-center gap-1 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-orange-500 text-white text-sm sm:text-base font-semibold rounded-lg sm:rounded-xl hover:bg-orange-600 shadow-lg">
           <Printer size={16} /> 列印
@@ -248,7 +248,7 @@ function SignatureSection({ token, signed_at, signature_data, signer_name, onSig
   }
 
   return (
-    <div className="no-print mt-6 sm:mt-8 border-2 border-orange-200 bg-orange-50 rounded-2xl p-4 sm:p-5">
+    <div className="no-print print:hidden mt-6 sm:mt-8 border-2 border-orange-200 bg-orange-50 rounded-2xl p-4 sm:p-5">
       <h3 className="text-base sm:text-lg font-bold text-orange-700 mb-3 flex items-center gap-2">
         <PenLine size={18} /> 客戶回簽
       </h3>
